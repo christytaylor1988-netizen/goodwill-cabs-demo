@@ -1,10 +1,11 @@
+import { createPortalGlow } from "./portal-glow.js";
 import { createSoldierJourney } from "./1066-journey.js?v=exit-crossing-20260929";
 import { create1066Nature } from "./1066-nature.js?v=2";
 // Independent 1066 landscape, derived from the preserved Old Time prototype.
 // No road meshes or gulls. Visibility is restored after every render.
 export function create1066(THREE,api){
  const {scene,taxi,ground,coast,roads,terrainHeight,roadWidthForType,convertPosition,nearestDrivePoint}=api;
- let active=false,cooldown=0;const previous=taxi.position.clone();
+ const glows=[];let active=false,cooldown=0;const previous=taxi.position.clone();
  const world=new THREE.Group();world.name='1066 landscape';world.visible=false;scene.add(world);
  const portalRoot=new THREE.Group();portalRoot.name='1066 portals';scene.add(portalRoot);
  const mat=c=>new THREE.MeshStandardMaterial({color:c,roughness:1});
@@ -27,7 +28,7 @@ export function create1066(THREE,api){
  // No road or track meshes: continuous grass and earth across the saved geography.
  const entry=api.portalEntry||nearestDrivePoint(convertPosition(50.8530,.5688)),leave=nearestDrivePoint(convertPosition(50.8555,.5810));
  let yaw=Math.atan2(-(entry.segment.b.x-entry.segment.a.x),-(entry.segment.b.z-entry.segment.a.z));if(-Math.sin(yaw)>0)yaw+=Math.PI;
- function gate(road,label,colour){const g=new THREE.Group(),ring=new THREE.Mesh(new THREE.TorusGeometry(3.3,.15,6,40),new THREE.MeshBasicMaterial({color:colour}));g.add(ring);g.position.set(road.point.x,terrainHeight(road.point.x,road.point.z)+3.4,road.point.z);g.rotation.y=yaw;
+ function gate(road,label,colour){const g=new THREE.Group(),ring=new THREE.Mesh(new THREE.TorusGeometry(3.3,.15,6,40),new THREE.MeshBasicMaterial({color:colour,toneMapped:false}));g.add(ring);glows.push(createPortalGlow(THREE,g,colour));g.position.set(road.point.x,terrainHeight(road.point.x,road.point.z)+3.4,road.point.z);g.rotation.y=yaw;
  if(label){const c=document.createElement('canvas');c.width=512;c.height=128;const ctx=c.getContext('2d');ctx.fillStyle='#192820';ctx.fillRect(0,0,512,128);ctx.fillStyle='#f7edc9';ctx.textAlign='center';ctx.font='bold 48px sans-serif';ctx.fillText(label,256,57,480);ctx.font='24px sans-serif';ctx.fillText('DRIVE THROUGH',256,99);const tex=new THREE.CanvasTexture(c);tex.colorSpace=THREE.SRGBColorSpace;const sign=new THREE.Sprite(new THREE.SpriteMaterial({map:tex}));sign.position.y=4.25;sign.scale.set(6,1.5,1);g.add(sign);}portalRoot.add(g);return g;}
  const entrance=gate(entry,null,0xdca76b),exit=gate(leave,'RETURN TO HASTINGS',0x9ccfa9);exit.visible=false;
  const nature=create1066Nature(THREE,{world,entry:entry.point,exit:leave.point,surface,coast});
@@ -38,7 +39,7 @@ export function create1066(THREE,api){
  const badge=document.createElement('div');badge.id='era1066Badge';badge.hidden=true;document.body.append(badge);
  function crossing(g){const a=previous,b=taxi.position,dx=b.x-a.x,dz=b.z-a.z;if(dx*dx+dz*dz>900)return false;const t=THREE.MathUtils.clamp(((g.position.x-a.x)*dx+(g.position.z-a.z)*dz)/(dx*dx+dz*dz||1),0,1);return Math.hypot(a.x+t*dx-g.position.x,a.z+t*dz-g.position.z)<2.7;}
  function switchMode(next){if(!next){taxi.position.set(leave.point.x,terrainHeight(leave.point.x,leave.point.z)+.15,leave.point.z);taxi.rotation.y=Math.atan2(-(leave.segment.b.x-leave.segment.a.x),-(leave.segment.b.z-leave.segment.a.z));}active=next;cooldown=3;world.visible=active;entrance.visible=!active;exit.visible=active;badge.hidden=!active;document.body.classList.toggle('era-1066',active);journey.switchMode(active);api.onSwitch(active);}
- function update(dt){hitCooldown=Math.max(0,hitCooldown-dt);bump*=Math.exp(-dt*10);cooldown=Math.max(0,cooldown-dt);portalRoot.visible=!api.blocked();
+ function update(dt){for(const glow of glows)glow.update(dt);hitCooldown=Math.max(0,hitCooldown-dt);bump*=Math.exp(-dt*10);cooldown=Math.max(0,cooldown-dt);portalRoot.visible=!api.blocked();
  if(active){nature.update(taxi.position.x,taxi.position.z);if(journey.update(dt))switchMode(false);}
  else if(!api.blocked()&&cooldown===0&&crossing(entrance))switchMode(true);
  if(active)badge.textContent='1066 · English soldier journey';previous.copy(taxi.position);}

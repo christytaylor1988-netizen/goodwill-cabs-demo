@@ -3,14 +3,15 @@
 export function createSeafront(THREE, api) {
   const {shared, findNearestRoadPoint, roadWidthForType, inPolygon, terrainHeight}=api;
   const sites=new Map([
-    [986718095,{kind:'arcade',name:'FUNLAND',colour:'red'}],
+    [986718095,{kind:'casino',name:'AMBER PALACE',colour:'orange'}],
+    ...[984233105,984233107,984233108].map(id=>[id,{kind:'arcade',name:'FUNLAND',colour:'red',white:true}]),
     [1301993862,{kind:'arcade',name:'FUNLAND',colour:'red'}],
     [945427895,{kind:'kiosk',name:'SEASIDE GIFTS',colour:'teal'}],
     [945427890,{kind:'kiosk',name:'ICES & ROCK',colour:'coral'}],
     [945427894,{kind:'kiosk',name:'PRIZE EVERY TIME',colour:'mustard'}]
   ]);
   const mats={};
-  for(const [name,colour] of Object.entries({red:0xa73532,wall:0xeee0ba,glass:0x344c51,iron:0x272c2b,coral:0x963f48,teal:0x356d70,mustard:0xb48b45,
+  for(const [name,colour] of Object.entries({white:0xf3f2eb,orange:0xd77e42,brown:0x966950,red:0xa73532,wall:0xeee0ba,glass:0x344c51,iron:0x272c2b,coral:0x963f48,teal:0x356d70,mustard:0xb48b45,
     cream:0xd7c697,dark:0x16272f,metal:0x7b817b,rust:0x735146,paint:0x887f6c,blue:0x3e5b75}))
     mats[name]=shared(new THREE.MeshStandardMaterial({color:colour,roughness:.85}));
   const bulbs=[0xffd182,0x8bdad3,0xff8593].map(color=>shared(new THREE.MeshStandardMaterial({color,emissive:color,emissiveIntensity:.8,roughness:.45})));
@@ -49,7 +50,7 @@ export function createSeafront(THREE, api) {
     c.fillStyle='#d1c9ac';c.fillRect(82,86,96,59);c.fillStyle='#374642';c.font='bold 16px sans-serif';c.textAlign='center';c.fillText('BACK SOON',130,112);c.font='12px sans-serif';c.fillText('(weather permitting)',130,132);
   });
   function sign(name,colour){return texture('sign:'+name,1024,160,c=>{
-    c.fillStyle={red:'#a73532',coral:'#852e46',teal:'#245d65',mustard:'#876536'}[colour];c.fillRect(0,0,1024,160);
+    c.fillStyle={orange:'#815e42',red:'#a73532',coral:'#852e46',teal:'#245d65',mustard:'#876536'}[colour];c.fillRect(0,0,1024,160);
     c.strokeStyle='#e9d59e';c.lineWidth=6;c.strokeRect(9,9,1006,142);c.fillStyle='#ffe3a0';c.font=name==='FUNLAND'?'bold 91px Georgia, serif':'900 75px sans-serif';c.textAlign='center';c.textBaseline='middle';c.fillText(name,512,82,955);
     // Scuffed edges are fixed at creation, never repainted each frame.
     c.fillStyle='#7c7868';for(let i=0;i<18;i++)c.fillRect(i*59,3+(i%3)*147,9+i%20,5);
@@ -76,20 +77,46 @@ export function createSeafront(THREE, api) {
     }
     if(!face)return false;
     const {x,z,nx,nz,length,road}=face,angle=Math.atan2(nx,nz),cos=Math.cos(angle),sin=Math.sin(angle);
-    const width=Math.min(length-.25,spec.kind==='arcade'?42:12),top=Math.min(height-.25,spec.kind==='arcade'?4.65:3.15);
+    const width=Math.min(length-.25,spec.kind==='casino'?60:spec.kind==='arcade'?42:12),top=Math.min(height-.25,spec.kind==='arcade'?4.65:3.15);
     const maxDepth=Math.min(1.1,road.distance-roadWidthForType(road.segment.type)/2-.75);if(maxDepth<.22)return false;
     const baseOffset=terrainHeight(x+nx*.4,z+nz*.4)-Math.max(...poly.outer.map(p=>terrainHeight(p.x,p.y)));
     const point=(u,v)=>({x:x+cos*u+sin*v,z:z-sin*u+cos*v});
     function box(w,h,d,u,y,v,material){const p=point(u,v),m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);m.position.set(p.x,y+baseOffset,p.z);m.rotation.y=angle;m.castShadow=true;m.receiveShadow=true;tile.group.add(m);return m}
     function panel(w,h,u,y,v,material){const p=point(u,v),m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),material);m.position.set(p.x,y+baseOffset,p.z);m.rotation.y=angle;tile.group.add(m);return m}
+    if(spec.kind==='casino'){
+      // Broad brick hall, simple end towers and an orange shop base.
+      box(width,height,.16,0,height/2,.10,mats.brown);
+      box(width,3.3,.2,0,1.65,.24,mats.orange);
+      for(const y of [3.45,7.3,height-.2])box(width+.2,.18,.3,0,y,.28,mats.cream);
+      const n=Math.max(3,Math.floor(width/4.4));
+      for(let i=0;i<n;i++){
+        const u=-width/2+width/n*(i+.5);
+        for(const y of [5.4,9.2]){
+          box(2.05,2.3,.12,u,y,.23,mats.cream);panel(1.8,2.08,u,y,.30,mats.glass);
+          box(.07,2.1,.06,u,y,.35,mats.white);box(1.8,.07,.06,u,y+.15,.35,mats.white);
+        }
+        box(1.8,2.5,.15,u,1.35,.36,mats.cream);panel(1.55,2.3,u,1.35,.45,mats.dark);
+      }
+      for(const u of [-width/2+2,width/2-2]){
+        box(3.8,1.5,2.2,u,height+.6,-.75,mats.brown);
+        box(4,.2,2.4,u,height+1.4,-.75,mats.cream);
+      }
+      box(width+.15,.24,.95,0,3.3,.5,mats.cream);
+      panel(Math.min(width-1,14),.9,0,3.95,.38,sign(spec.name,'orange'));
+      used.add(id);return true;
+    }
     if(spec.kind==='arcade'&&height>top+1){
       // Cream upper storeys with shallow bays and iron balconies, within the existing footprint/clearance.
-      box(width,height-top,.06,0,top+(height-top)/2,.04,mats.wall);
+      box(width,height-top,.06,0,top+(height-top)/2,.04,(spec.white?mats.white:mats.wall));
       const columns=Math.max(1,Math.floor(width/4.5)),spacing=width/columns;
       for(let level=0;top+1.5+level*2.9<height-.6;level++)for(let i=0;i<columns;i++){
-        const u=-width/2+spacing*(i+.5),y=top+1.5+level*2.9,w=Math.min(2.3,spacing-.6),depth=Math.min(.36,maxDepth-.1);
-        box(w+.2,2.25,depth,u,y,depth/2+.08,mats.wall);
+        const u=-width/2+spacing*(i+.5),y=top+1.5+level*2.9,w=Math.min(2.3,spacing-.6),depth=Math.min(spec.white?.85:.36,maxDepth-.1);
+        box(w+.2,2.25,depth,u,y,depth/2+.08,(spec.white?mats.white:mats.wall));
         panel(w,2.02,u,y,depth+.09,mats.glass);
+        if(spec.white)for(const side of [-1,1]){
+          const pane=box(.035,2.02,depth*.8,u+side*(w/2+.035),y,depth*.55+.08,mats.glass);
+          box(.06,2.2,.07,u+side*(w/2+.07),y,depth+.1,mats.white);
+        }
         for(const f of [-.5,0,.5])box(.055,2.02,.04,u+w*f,y,depth+.12,mats.cream);
         for(const f of [-.5,0,.5])box(w,.055,.04,u,y+f*2,depth+.12,mats.cream);
         box(w+.35,.1,depth+.2,u,y-1.14,(depth+.2)/2,mats.cream);
@@ -107,13 +134,28 @@ export function createSeafront(THREE, api) {
     const openingTop=top-signH-.12,openingH=openingTop-.4;
     const count=Math.max(1,Math.floor(width/(spec.kind==='arcade'?3.2:3.6))),bay=width/count;
     for(let i=0;i<count;i++){
-      const u=-width/2+bay*(i+.5),closed=spec.kind==='kiosk'&&(i%2===0||id===945427895);
+      const u=-width/2+bay*(i+.5);if(id===984233107)continue;const closed=spec.kind==='kiosk'&&(i%2===0||id===945427895);
       box(bay-.12,openingH,.07,u,.4+openingH/2,.155,mats.dark);
       panel(bay-.3,openingH-.13,u,.4+openingH/2,.20,closed?shutter:windows[i%2]);
       if(spec.kind==='arcade'&&i%3===1){panel(bay*.4,openingH-.12,u,.4+openingH/2,.215,mats.dark);box(.06,openingH,.08,u-bay*.21,.4+openingH/2,.25,mats.metal);}
       for(const side of [-1,1])box(.075,openingH+.15,.12,u+side*(bay/2-.10),.4+openingH/2,.23,mats.cream);
       box(bay-.1,.12,.24,u,.34,.24,mats.metal);
       if(!closed)box(bay-.23,.045,.035,u,.4+openingH*.52,.23,mats.metal);
+    }
+    if(id===984233107){
+      // A dark, open bay belongs to the actual Funland facade; no road-side arch.
+      const doorW=Math.min(4.9,width-.7),doorH=openingTop-.08;
+      const voidMat=shared(new THREE.MeshBasicMaterial({color:0x050709}));
+      const recessMat=shared(new THREE.MeshBasicMaterial({color:0x181619}));
+      panel(doorW,doorH,0,doorH/2,.24,voidMat);
+      for(const side of [-1,1]){
+        box(.13,doorH,.26,side*(doorW/2+.065),doorH/2,.26,mats.red);
+        panel(.22,doorH-.12,side*(doorW/2-.11),doorH/2,.25,recessMat);
+        for(let j=0;j<5;j++)box(.055,.055,.035,side*(doorW/2+.06),.45+j*.58,.405,bulbs[j%3]);
+      }
+      // Faint cabinet slivers inside the black entrance imply arcade depth.
+      for(const side of [-1,1]){panel(.32,1.35,side*(doorW/2-.43),1.05,.255,cabinet);}
+      box(doorW,.035,.36,0,.025,.31,mats.dark);
     }
     if(spec.kind==='arcade'){
       panel(.6,.75,-width/2+.38,1.85,.28,smallSign);
@@ -126,7 +168,7 @@ export function createSeafront(THREE, api) {
     }
     // Peeling paint, rust marks and a sagging shallow canopy stay within the pavement margin.
     for(let i=0;i<12;i++)box(.09+(i%4)*.07,.025+(i%3)*.035,.01,-width/2+.15+(i*1.71)%(width-.3),.13+i%3*.06,.145,mats.paint);
-    const canopyDepth=Math.min(.75,maxDepth-.15);
+    const canopyDepth=Math.min(spec.white?1:.75,maxDepth-.15);
     const awning=box(width+.05,.1,canopyDepth,0,openingTop+.03,canopyDepth/2+.12,mats[spec.colour]);
     if(spec.kind==='arcade'){
       awning.rotateX(.18);
@@ -134,11 +176,11 @@ export function createSeafront(THREE, api) {
       for(let u=-width/2+3;u<width/2-1;u+=8)panel(Math.min(4.5,width-1),.24,u,openingTop-.12,canopyDepth+.14,sign(spec.name,spec.colour));
       // Shallow physical prize cabinets and one simple ride; no playable interiors.
       const cabinetDepth=Math.min(.43,maxDepth-.28);
-      for(let i=0;i<Math.min(4,Math.floor(width/4));i++){
+      for(let i=0;i<(id===984233107?0:Math.min(4,Math.floor(width/4)));i++){
         const u=-width/2+1.4+i*(width-2.8)/Math.max(1,Math.min(4,Math.floor(width/4))-1),v=.25+cabinetDepth/2;
         box(.85,1.8,cabinetDepth,u,.98,v,mats.cream);panel(.77,1.7,u,.98,.255+cabinetDepth,cabinet);
       }
-      if(width>9&&maxDepth>.85){
+      if(id!==984233107&&width>9&&maxDepth>.85){
         const u=width*.22,v=.65;box(1.3,.16,.62,u,.12,v,mats.mustard);box(1.1,.42,.5,u,.51,v,mats.red);
         box(.52,.38,.45,u+.12,.9,v,mats.blue);box(.36,.24,.015,u+.12,.91,v+.232,mats.glass);
         for(const side of [-1,1])box(.23,.23,.055,u+side*.36,.31,v+.28,mats.dark);
@@ -155,5 +197,5 @@ export function createSeafront(THREE, api) {
     used.add(id);return true;
   }
   function update(time){for(let i=0;i<bulbs.length;i++)bulbs[i].emissiveIntensity=.7+.3*Math.sin(time*1.6+i*2.094)}
-  return {decorate,update,sites,used,bulbs,textures};
+  return {decorate,update,sites,used,bulbs,textures,facadeMaterial:id=>id===986718095?mats.brown:sites.get(id)?.white?mats.white:null};
 }

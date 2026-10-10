@@ -34,3 +34,12 @@ export function nextInstruction(points,position,yaw){
  }
  return {label:'DESTINATION AHEAD',angle:0,distance:metres};
 }
+
+// Full remaining route, independent of the distance to the next turn.
+export function remainingRouteDistance(points,position,fallback=0){
+ if(points.length<2)return fallback;
+ let first=0,best=Infinity,q=points[0];
+ for(let i=0;i<Math.min(points.length-1,4);i++){const at=project(position,{a:points[i],b:points[i+1]}),d=distance(at,position);if(d<best){best=d;first=i;q=at;}}
+ let metres=best+distance(q,points[first+1]);for(let i=first+1;i<points.length-1;i++)metres+=distance(points[i],points[i+1]);return metres;
+}
+export function formatJourneyDistance(metres){return metres>=1609.344?(metres/1609.344).toFixed(1)+' miles':Math.round(Math.max(0,metres))+' m';}

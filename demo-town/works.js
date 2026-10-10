@@ -31,6 +31,18 @@ export function createWorks(THREE,api){
    const q=p(3.6,0);board(g,q.x,q.z,angle+Math.PI,'PAVING WORKS|ACCESS OPEN');const q2=p(-3.6,0);board(g,q2.x,q2.z,angle+Math.PI,'DIVERSION|NOT IN USE');
    for(let i=0;i<3;i++){const q=p(1.3,.15);box(g,.65,.13,.5,q.x,y+.12+i*.13,q.z,cream,angle)}used.add(s.id);
   }
+  // Rough hoarding across the vacant plot east of Lantern Kettle, behind the pavement.
+  const fa=convertPosition(50.8554065,.5870086),fb=convertPosition(50.8555134,.5873972);
+  if(Math.floor((fa.x+fb.x)/2/450)===tile.x&&Math.floor((fa.z+fb.z)/2/450)===tile.z){
+   const dx=fb.x-fa.x,dz=fb.z-fa.z,len=Math.hypot(dx,dz),angle=-Math.atan2(dz,dx),n=Math.ceil(len/2.4),w=len/n;
+   const sheets=[metal,mat(0x87877a),mat(0x73786b),mat(0x8b8172)];
+   for(let i=0;i<n;i++){
+    const t=(i+.5)/n,x=fa.x+dx*t,z=fa.z+dz*t,y=terrainHeight(x,z),h=2.6+[0,.12,-.09,.05][i%4];
+    box(g,w+.035,h,.09,x,y+h/2,z,sheets[i%4],angle);
+    for(let j=0;j<8;j++){const u=(j/8-.44)*w;box(g,.035,h,.14,x+dx/len*u,y+h/2,z+dz/len*u,sheets[i%4],angle)}
+    const px=fa.x+dx*i/n,pz=fa.z+dz*i/n;box(g,.11,2.9,.11,px,terrainHeight(px,pz)+1.45,pz,wood);
+   }
+  }
   tile.workFronts=[];if(g.children.length){batchScenery({group:g});tile.group.add(g)}
  }
  return {queue,finish,used,skipped};

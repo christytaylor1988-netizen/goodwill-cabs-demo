@@ -40,7 +40,7 @@ export function createFerrisWheel(THREE,{scene,taxi,shared,convertPosition,terra
  // Footings reach into the existing terrain at every support; no terrain edits.
  for(const x of [-4.6,4.6])for(const z of [-3.23,3.23]){const wx=p.x+x*Math.cos(wheelSite.yaw)+z*Math.sin(wheelSite.yaw),wz=p.z-x*Math.sin(wheelSite.yaw)+z*Math.cos(wheelSite.yaw),lo=terrainHeight(wx,wz)-root.position.y-.25;box(root,2.1,Math.max(.2,.35-lo),1.9,x,(lo+.35)/2,z,base)}
  scene.add(root);let night=false;const dummy=new THREE.Object3D();
- function setTime(time){night=time==='night';lights.visible=cabinLights.visible=night}
+ function setTime(time){const glow=typeof time==='number'?time:time==='night'?1:0;night=glow>.5;lights.visible=cabinLights.visible=glow>0;for(const m of [...lit,cabinLights.material]){m.transparent=true;m.depthWrite=false;m.opacity=glow}}
  function update(t){root.visible=taxi.position.distanceToSquared(root.position)<1400*1400;if(!root.visible)return;const angle=t*Math.PI*2/wheelSite.turnSeconds;rotor.rotation.z=angle;for(let i=0;i<n;i++){const a=i*Math.PI*2/n+angle;dummy.position.set(Math.cos(a)*r,wheelSite.hubHeight+Math.sin(a)*r,0);dummy.updateMatrix();for(const b of cabinBatches)b.setMatrixAt(i,dummy.matrix);cabinLights.setMatrixAt(i,dummy.matrix)}for(const b of [...cabinBatches,cabinLights])b.instanceMatrix.needsUpdate=true}
  setTime('afternoon');update(0);return {update,setTime,root,rotor,cabinBatches,cabinLights,get night(){return night}};
 }

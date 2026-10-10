@@ -1,5 +1,5 @@
-// The earlier fictional test set is retained but disabled.
-// Report coordinates enter only through the separate local development dataset.
+// Fixed fictional game hazards, used when the optional local report dataset is absent.
+// These are gameplay placements, not claims about real road defects.
 export const fictionalPotholeSites = [
  ['Pelham Place',50.855182,.58562,.48,.62,.065,false],
  ['Pelham Place',50.855190,.58590,.68,.83,.12,false],

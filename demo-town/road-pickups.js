@@ -1,5 +1,7 @@
-// Small fixed road pickups. No persistence, audio or vehicle handling penalties.
+import {createPickupSound} from './pickup-sound.js';
+// Small fixed road pickups. No persistence or vehicle handling penalties.
 export function createRoadPickups(THREE,api){
+ const pickupSound=createPickupSound();
  const {scene,taxi,segments,terrainHeight,blocked,tip,toast}=api;
  const group=new THREE.Group();group.name='Road pickups';scene.add(group);
  let fuel=100,condition=100,turbo=0,remaining=0,time=0,lastDamage=-10,lastHUD='';
@@ -22,13 +24,14 @@ export function createRoadPickups(THREE,api){
  const candidates=segments.filter(s=>s.length>70&&s.a.z>500&&s.b.z>500&&s.roadName).sort((a,b)=>Number(coast(b))-Number(coast(a))||(coast(a)?a.a.x-b.a.x:hash(a)-hash(b)));
  for(const s of candidates){if(items.length>=24)break;const x=(s.a.x+s.b.x)/2,z=(s.a.z+s.b.z)/2,yaw=Math.atan2(-(s.b.x-s.a.x),-(s.b.z-s.a.z));if(blocked(x,z,yaw)||items.some(p=>Math.hypot(p.x-x,p.z-z)<150))continue;const kind=types[items.length%types.length],mesh=model(kind);mesh.position.set(x,terrainHeight(x,z)+1.5,z);group.add(mesh);items.push({kind,x,z,yaw,mesh,collected:false,road:s.roadName||'Road'});}
  const hud=document.createElement('div');hud.id='pickupHUD';hud.style.cssText='font-size:11px;line-height:1.6;margin-top:7px;color:#d9e8e7';document.getElementById('boostTrack').replaceWith(hud);
- function refresh(){const str=`Fuel ${Math.ceil(fuel)}%  ·  Condition ${Math.ceil(condition)}%<br><span style="color:#ffcf62">${remaining>0?'SUPER TURBO · '+remaining.toFixed(1)+'s':turbo?'Super Turbo ready · T':'Super Turbo: empty'}</span> · Space: unlimited`;
+ function refresh(){const str=`<div class="cluster-stats"><div><span>FUEL</span><strong>${Math.ceil(fuel)}<small>%</small></strong><i style="--level:${fuel}%"></i></div><div><span>CONDITION</span><strong>${Math.ceil(condition)}<small>%</small></strong><i style="--level:${condition}%"></i></div></div><div class="cluster-turbo"><span>TURBO</span><strong>${remaining>0?'ACTIVE · '+remaining.toFixed(1)+'s':turbo?'READY · T':'EMPTY'}</strong></div>`;
   if(str!==lastHUD){hud.innerHTML=str;lastHUD=str;}}
  function activate(){if(!turbo||remaining>0||!api.canUse())return false;turbo--;remaining=5;toast('SUPER TURBO · 5 seconds');return true;}
  function damage(amount){if(time-lastDamage<1.2)return;condition=Math.max(25,condition-amount);lastDamage=time;refresh();}
  function update(dt,speed){time+=dt;remaining=Math.max(0,remaining-dt);if(Math.abs(speed)>.5)fuel=Math.max(15,fuel-dt*.035);for(const p of items){if(p.collected)continue;p.mesh.position.y=terrainHeight(p.x,p.z)+1.5+Math.sin(time*2+p.x)*.17;p.mesh.rotation.y=time*.7;
   if(!api.canCollect())continue;const prev=api.previous(),dx=taxi.position.x-prev.x,dz=taxi.position.z-prev.z,t=Math.max(0,Math.min(1,((p.x-prev.x)*dx+(p.z-prev.z)*dz)/(dx*dx+dz*dz||1)));if(Math.hypot(p.x-prev.x-dx*t,p.z-prev.z-dz*t)>1.7)continue;
   if(p.kind==='turbo'&&turbo)continue;p.collected=true;p.mesh.visible=false;
+  pickupSound.play(p.kind);
   if(p.kind==='petrol'){fuel=100;toast('Petrol collected · tank full');}else if(p.kind==='spanner'){condition=100;toast('Spanner collected · condition restored');}else if(p.kind==='turbo'){turbo=1;toast('Super Turbo collected · press T');}else{tip(200);toast('Tip coin · £2 added to your fare (or next fare)');}
  }refresh();}
  refresh();return {items,update,activate,damage,get active(){return remaining>0},get state(){return {fuel,condition,turbo,remaining}},group};

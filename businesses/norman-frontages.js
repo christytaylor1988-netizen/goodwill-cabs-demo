@@ -1,3 +1,4 @@
+import {estateMaterial,havelockEstateSites,havelockAgencyNames} from './havelock-estates.js?v=20261005';
 import {normanLocations} from './norman-locations.js';
 import {normanNames} from './norman-names.js';
 import {townLocations} from './town-locations.js';
@@ -5,7 +6,7 @@ import {townNames} from './town-names.js';
 import {normanStyles} from './norman-styles.js';
 export function createNormanFrontages(THREE,api){
  const {shared,terrainHeight,findNearestRoadPoint,roadWidthForType,inPolygon}=api;
- const sites=new Map(Object.entries({...townLocations,...normanLocations}).filter(([,v])=>!v.hidden).map(([id,v])=>[v.buildingId,{id,...v}]));
+ const sites=new Map(Object.entries({...townLocations,...normanLocations,...havelockEstateSites}).filter(([,v])=>!v.hidden).map(([id,v])=>[v.buildingId,{id,...v}]));
  const materials=new Map(),used=new Set(),skipped=new Map(),active=new Set(),heights=new Map();
  const names={...townNames,...normanNames};
  let lightingTime='afternoon';
@@ -18,10 +19,11 @@ export function createNormanFrontages(THREE,api){
  }
  function setTime(value){
   lightingTime=value;
-  for(const mat of materials.values())if(mat.userData.nightGlow!==undefined)mat.emissiveIntensity=mat.userData.nightGlow*(value==='night'?1:value==='evening'?.45:0);
+  for(const mat of materials.values())if(mat.userData.nightGlow!==undefined)mat.emissiveIntensity=mat.userData.nightGlow*(typeof value==='number'?value:value==='night'?1:value==='evening'?.45:0);
  }
 
  function material(s){
+  if(s.road==='Havelock Road'&&s.estateIndex!==undefined)return estateMaterial(THREE,shared,s,materials);
   if(materials.has(s.id))return materials.get(s.id);
   const st=normanStyles[s.style]||normanStyles.shop,c=document.createElement('canvas');const scale=s.id.startsWith('town-')?.5:1;c.width=1024*scale;c.height=512*scale;const g=c.getContext('2d');g.scale(scale,scale);
   g.fillStyle=st.paint;g.fillRect(0,0,1024,512);
@@ -56,7 +58,7 @@ export function createNormanFrontages(THREE,api){
    lg.fillStyle=lighting.colour;lg.font='600 48px Georgia';lg.textAlign='center';lg.textBaseline='middle';lg.globalAlpha=.32;lg.fillText(names[s.id]||'Local Shop',512,48,960);lg.globalAlpha=1;
    const glow=shared(new THREE.CanvasTexture(lc));glow.colorSpace=THREE.SRGBColorSpace;glow.anisotropy=4;
    mat.emissive.set(0xffffff);mat.emissiveMap=glow;mat.userData.nightGlow=lighting.strength;
-   mat.emissiveIntensity=lighting.strength*(lightingTime==='night'?1:lightingTime==='evening'?.45:0);
+   mat.emissiveIntensity=lighting.strength*(typeof lightingTime==='number'?lightingTime:lightingTime==='night'?1:lightingTime==='evening'?.45:0);
   }
   materials.set(s.id,mat);return mat;
  }
@@ -81,7 +83,7 @@ export function createNormanFrontages(THREE,api){
    const offset=.18;
    if(![-.5,0,.5].every(t=>{const r=findNearestRoadPoint({x:x+nx*offset+nz*width*t,z:z+nz*offset-nx*width*t},true);return r&&r.distance>roadWidthForType(r.segment.type)/2+.25})){skipped.set(id,'Insufficient pavement clearance');continue}
    const base=Math.max(...poly.outer.map(p=>terrainHeight(p.x,p.y))),bottom=Math.min(terrainHeight(a.x,a.y),terrainHeight(b.x,b.y))+.04,top=base+Math.min(2.91,(heights.get(id)||3)-.09),height=top-bottom;
-   const panel=new THREE.Mesh(new THREE.PlaneGeometry(width,height),material(s));panel.position.set(x+nx*offset,(top+bottom)/2,z+nz*offset);panel.rotation.y=Math.atan2(nx,nz);panel.receiveShadow=true;panel.name=names[s.id];panel.userData={normanId:s.id,buildingId:id,top,base};layer.add(panel);used.add(id);
+   const panel=new THREE.Mesh(new THREE.PlaneGeometry(width,height),material(s));panel.position.set(x+nx*offset,(top+bottom)/2,z+nz*offset);panel.rotation.y=Math.atan2(nx,nz);panel.receiveShadow=true;panel.name=s.estateIndex!==undefined?havelockAgencyNames[s.estateIndex]:names[s.id];panel.userData={normanId:s.id,buildingId:id,top,base};layer.add(panel);used.add(id);
   }
   if(layer.children.length)tile.group.add(layer);tile.normanFrontages=[];
  }

@@ -1,0 +1,41 @@
+/* Shared driver phone: existing map and dispatch controls, including in-car view. */
+#driverPhone{position:fixed;right:12px;bottom:15px;width:260px;z-index:1005;padding:8px 6px 13px;border:3px solid #50565b;border-radius:26px;background:#141719;box-shadow:0 5px 18px #0005;overflow:hidden;color:#ecf0ef;font-family:Arial,sans-serif;pointer-events:auto}
+.driver-status{height:23px;display:flex;align-items:center;justify-content:space-between;padding:0 12px;font-size:11px;font-weight:700;font-variant-numeric:tabular-nums}
+.driver-status-icons{display:flex;align-items:center;color:#dce1e1}.driver-app-title{display:flex;align-items:center;justify-content:space-between;gap:6px;background:#243a37;padding:11px 10px;border-radius:12px 12px 0 0}.driver-app-title strong{font-size:12px;letter-spacing:.2px}.driver-app-title span{font-size:8px;color:#bdccc8;white-space:nowrap}
+#driverPhone #miniMapFrame,body.in-car #driverPhone #miniMapFrame{position:relative!important;inset:auto!important;width:100%!important;height:150px!important;border:0!important;border-radius:0 0 8px 8px!important;box-shadow:none!important;z-index:0}
+#driverPhone .leaflet-control-attribution{font-size:8px!important;background:#ffffffdf;color:#333}#driverPhone #miniMap{height:100%}
+#driverPhone #job{position:static;width:auto;margin:6px 0 0;padding:11px 10px;background:#edf0ec;color:#20302b;border:0;border-radius:9px;box-shadow:none;backdrop-filter:none;max-height:calc(100dvh - 310px);overflow:auto}
+#driverPhone #phase{font-size:9px;letter-spacing:1px;color:#3f6255}#driverPhone #jobTitle{font-size:16px;line-height:1.2;letter-spacing:0;margin:7px 0 4px}#driverPhone #jobText{font-size:12px;line-height:1.35;color:#3c4c46;margin:0 0 8px}#driverPhone #offerDetails{font-size:11px;line-height:1.5;color:#304a40!important;margin:8px 0 10px}#driverPhone #offerActions{display:grid;grid-template-columns:1fr 1fr;gap:6px}#driverPhone #offerActions button,#driverPhone #nextFare{padding:10px 5px;font-size:12px;background:#325b49;color:#fff;border-radius:6px}#driverPhone #offerActions #declineFare{background:#dce2dc;color:#293d32}#driverPhone #offerCountdown{grid-column:1/-1;color:#59675f;font-size:10px;text-align:center;font-variant-numeric:tabular-nums}#driverPhone #offerCountdown:before{content:'Respond within '}
+.driver-home{height:3px;width:66px;background:#89908f;border-radius:3px;margin:9px auto -6px}.driver-map-off{display:none;padding:18px 8px;background:#23302e;color:#c8d0cd;font-size:11px;text-align:center}body.map-off .driver-map-off{display:block}body.map-off #driverPhone #miniMapFrame{display:none}
+body.in-car #cabPhone{right:4%;bottom:3%;width:260px;height:auto;padding:0;border:0;background:none;box-shadow:none;border-radius:0}body.in-car #phoneMapSlot{overflow:visible;flex:none;background:none;min-height:0}body.in-car #driverPhone{position:relative;inset:auto;width:100%;box-shadow:0 5px 18px #0005}body.in-car #cabPhone>.phone-speaker,body.in-car #cabPhone>.phone-title,body.in-car #cabPhone>.phone-home,body.in-car #cabPhone>.phone-off{display:none}body.in-car .phone-guidance{border-radius:8px;margin-top:4px;padding:7px 10px}body.in-car .phone-guidance strong{font-size:11px}body.in-car .phone-guidance small{font-size:10px}
+#pickupHUD{max-width:calc(100vw - 390px)}
+@media(max-width:600px){#driverPhone,body.in-car #cabPhone{width:230px;right:8px;bottom:12px}#driverPhone #miniMapFrame,body.in-car #driverPhone #miniMapFrame{height:130px!important}.driver-app-title strong{font-size:11px}.driver-app-title span{font-size:7px}#driverPhone #job{padding:9px;max-height:calc(100dvh - 280px)}#driverPhone #jobTitle{font-size:15px}#pickupHUD{max-width:calc(100vw - 350px)}body.in-car .phone-guidance{display:none}}
+@media(max-height:650px){#driverPhone #miniMapFrame,body.in-car #driverPhone #miniMapFrame{height:120px!important}#driverPhone #job{max-height:calc(100dvh - 250px)}body.in-car .phone-guidance{display:none}}
+
+/* A constant full-size handset moves below the viewport; it never scales or changes shape. */
+:root{--phone-height:min(460px,calc(100dvh - 90px));--phone-peek:230px}
+#driverPhone{height:var(--phone-height);border-radius:26px;border:3px solid #50565b;transform:none}
+#driverPhone .driver-home{position:absolute;bottom:13px;left:50%;margin:0;transform:translateX(-50%)}
+#driverPhone #job{max-height:calc(var(--phone-height) - 252px)}
+#driverPhone.phone-collapsed,body.in-car #driverPhone.phone-collapsed{bottom:0;transform:translateY(calc(100% - var(--phone-peek)))}
+body.in-car #cabPhone:has(.phone-collapsed){bottom:0}
+body.in-car #cabPhone:has(.phone-collapsed) .phone-guidance{display:none}
+.driver-dispatch-note{position:absolute;top:72px;left:6px;right:6px;z-index:1010;background:#edf0ec;color:#20302b;padding:12px 10px;font-size:12px;line-height:1.4;box-shadow:0 4px 12px #0005;border-radius:0 0 8px 8px}
+.driver-dispatch-note strong,.driver-dispatch-note span{display:block}.driver-dispatch-note strong{font-size:10px;margin-bottom:4px}
+@media(max-width:600px){:root{--phone-peek:210px}}
+@media(max-height:650px){:root{--phone-peek:200px}}
+
+/* One app surface: the map and dispatch content use exactly the same inner width. */
+.driver-app-screen{width:100%;overflow:hidden;border-radius:12px 12px 8px 8px;background:#edf0ec}
+#driverPhone .driver-app-screen>*{box-sizing:border-box;width:100%!important}
+#driverPhone .driver-app-screen #miniMapFrame{display:block;height:150px!important;margin:0!important;border-radius:0!important;flex:none}
+#driverPhone .driver-app-screen #job{width:100%!important;margin:0;padding:11px 10px;border-radius:0;border-top:1px solid #cbd4ce}
+.driver-job-state{padding:10px;color:#3d5a4e;font-size:10px;font-weight:700;letter-spacing:.6px;border-top:1px solid #cbd4ce}
+#driverPhone{--phone-peek:270px}
+body.in-car .phone-guidance{display:none}
+@media(max-height:650px){#driverPhone .driver-app-screen #miniMapFrame{height:120px!important}#driverPhone{--phone-peek:240px}}
+
+/* Idle / off-shift phone is a plain map beneath the status bar. */
+#driverPhone.phone-map-only{--phone-peek:200px}
+#driverPhone.phone-map-only .driver-app-title,#driverPhone.phone-map-only .driver-job-state{display:none}
+@media(max-height:650px){#driverPhone.phone-map-only{--phone-peek:170px}}

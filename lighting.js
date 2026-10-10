@@ -1,6 +1,6 @@
 // A fixed pool: two soft headlight spots + up to five nearby warm streetlights.
 // No extra shadow maps, volumetric cones, reflection passes or per-lamp light allocation.
-export function createDrivingLights(THREE,{scene,taxi,taxiVisual,headlampMaterial,terrainHeight,getStreetTiles,getTime}){
+export function createDrivingLights(THREE,{scene,taxi,taxiVisual,headlampMaterial,terrainHeight,getStreetTiles,getTime,getDarkness=()=>getTime()==='night'?1:0}){
  let override=null,lastTime=getTime(),clock=1;
  const headlights=[-1,1].map(side=>{
   const light=new THREE.SpotLight(0xffefd2,0,40,.28,.85,1.3);light.castShadow=false;
@@ -9,19 +9,18 @@ export function createDrivingLights(THREE,{scene,taxi,taxiVisual,headlampMateria
  });
  const streetlights=Array.from({length:5},()=>{const light=new THREE.PointLight(0xffbf73,0,19,1.7);light.castShadow=false;scene.add(light);return {light,site:null,nextSite:null}});
  const source=new THREE.Vector3();
- function enabled(){return override===null?getTime()==='night':override}
+ function enabled(){return override===null?getDarkness()>.5:override}
  function label(){return 'Lights: '+(enabled()?'on':'off')+(override===null?' · auto':' · H')}
  function toggle(){override=!enabled();sync();return label()}
  function sync(){
-  const now=getTime();if(now!==lastTime){override=null;lastTime=now;clock=1}
-  const on=enabled();headlampMaterial.emissive.setHex(on?0xffe9ba:0x000000);headlampMaterial.emissiveIntensity=on?2.5:0;
-  for(const h of headlights){
-   const night=now==='night';h.light.intensity=on?(night?300:90):0;
-   h.light.distance=night?72:40;h.light.decay=night?1.15:1.3;h.light.angle=night?.32:.28;
-  }
+  const now=getTime();if(now!==lastTime){lastTime=now;clock=1}
+  const dark=getDarkness(),amount=override===null?dark:override?1:0;
+  headlampMaterial.emissive.setHex(0xffe9ba);headlampMaterial.emissiveIntensity=amount*2.5;
+  for(const h of headlights){h.light.intensity=amount*(90+dark*210);h.light.distance=40+dark*32;h.light.decay=1.3-dark*.15;h.light.angle=.28+dark*.04;}
+
  }
  function chooseStreetlights(){
-  const candidates=[],night=getTime()==='night';
+  const candidates=[],night=true;
   for(const entry of getStreetTiles().values())for(const site of entry.group.userData.lampSites||[]){
    if(site.nightOnly&&!night)continue;
    const dx=site.x-taxi.position.x,dz=site.z-taxi.position.z,distance=Math.hypot(dx,dz);
@@ -38,15 +37,15 @@ export function createDrivingLights(THREE,{scene,taxi,taxiVisual,headlampMateria
   const fx=-Math.sin(taxi.rotation.y),fz=-Math.cos(taxi.rotation.y),rx=Math.cos(taxi.rotation.y),rz=-Math.sin(taxi.rotation.y);
   for(const h of headlights){
    source.copy(h.local);taxiVisual.localToWorld(source);h.light.position.copy(source);
-   const reach=getTime()==='night'?34:18;
+   const reach=18+getDarkness()*16;
    const x=taxi.position.x+fx*reach+rx*h.side*1.6,z=taxi.position.z+fz*reach+rz*h.side*1.6;
    h.target.position.set(x,terrainHeight(x,z)+.12,z);h.target.updateMatrixWorld();
   }
   clock+=dt;if(clock>.5){clock=0;chooseStreetlights()}
-  const strength=getTime()==='night'?65:getTime()==='evening'?12:0;
-  for(const entry of getStreetTiles().values())if(entry.nightGroup)entry.nightGroup.visible=getTime()==='night';
+  const strength=65*getDarkness();
+  for(const entry of getStreetTiles().values())if(entry.nightGroup)entry.nightGroup.visible=true;
   for(const slot of streetlights){
-   slot.light.distance=getTime()==='night'?27:19;slot.light.decay=getTime()==='night'?1.5:1.7;
+   slot.light.distance=19+8*getDarkness();slot.light.decay=1.7-.2*getDarkness();
    const changing=slot.site!==slot.nextSite,target=changing||!slot.site?0:strength;
    slot.light.intensity+=(target-slot.light.intensity)*(1-Math.exp(-dt*8));
    if(changing&&slot.light.intensity<.2){slot.site=slot.nextSite;slot.light.intensity=0}

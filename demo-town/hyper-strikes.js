@@ -1,0 +1,35 @@
+// Position-committed telegraphs, finite waves, reusable geometry, and recoverable impacts.
+export function createVerticalStrikes(T,{taxi,terrainHeight,getVelocity,onHit}){
+ const group=new T.Group();group.name='Hyper vertical strikes';
+ const beamGeo=new T.CylinderGeometry(.055,.085,240,5),ringGeo=new T.RingGeometry(1.6,1.85,28),sparkGeo=new T.BufferGeometry();
+ const points=[];for(let i=0;i<16;i++)points.push(Math.cos(i*2.4)*(1+i%4),.4+i%5,Math.sin(i*2.4)*(1+i%4));sparkGeo.setAttribute('position',new T.Float32BufferAttribute(points,3));
+ const slots=Array.from({length:16},()=>{const g=new T.Group(),material=new T.MeshBasicMaterial({color:0xfff4df,transparent:true,opacity:.12,depthWrite:false,toneMapped:false,blending:T.AdditiveBlending}),beam=new T.Mesh(beamGeo,material);beam.position.y=120;g.add(beam);const aura=new T.Mesh(beamGeo,new T.MeshBasicMaterial({color:0xff6421,transparent:true,opacity:.04,depthWrite:false,toneMapped:false,blending:T.AdditiveBlending}));aura.position.y=120;aura.scale.set(5,1,5);g.add(aura);
+  const ring=new T.Mesh(ringGeo,material.clone());ring.rotation.x=-Math.PI/2;ring.position.y=.07;g.add(ring);
+  const flash=new T.Sprite(new T.SpriteMaterial({map:flashTexture(T),color:0xfff2d6,transparent:true,blending:T.AdditiveBlending,depthWrite:false,toneMapped:false}));flash.position.y=.5;flash.scale.set(8,8,1);flash.visible=false;g.add(flash);
+  const sparks=new T.Points(sparkGeo,new T.PointsMaterial({color:0xffedc8,size:.12,transparent:true,opacity:0,toneMapped:false,depthWrite:false}));g.add(sparks);const fragments=new T.InstancedMesh(new T.TetrahedronGeometry(.32),new T.MeshBasicMaterial({color:0x211610}),6);fragments.visible=false;fragments.frustumCulled=false;g.add(fragments);g.visible=false;group.add(g);return{g,beam,aura,ring,flash,sparks,fragments,active:false,age:0,hit:false};});
+ const fragmentPose=new T.Object3D();
+ const flashes=Array.from({length:16},()=>new T.Vector3(0,0,0));let time=0,next=2,scenic=.2,burst=0,waves=0,shots=0,hits=0,protection=0,near=0,exits=[],audio=null;
+ const screen=document.createElement('div');screen.id='hyperStrikeImpact';screen.style.cssText='position:fixed;inset:0;pointer-events:none;z-index:1080;background:repeating-linear-gradient(0deg,#fff3 0 1px,transparent 1px 5px);opacity:0';document.body.append(screen);let screenLife=0;
+ function sound(impact=false){if(audio?.state!=='running')return;const n=Math.floor(audio.sampleRate*(impact?.22:.11)),buffer=audio.createBuffer(1,n,audio.sampleRate),data=buffer.getChannelData(0);for(let i=0;i<n;i++)data[i]=(Math.random()*2-1)*Math.pow(1-i/n,2);const source=audio.createBufferSource(),filter=audio.createBiquadFilter(),gain=audio.createGain();source.buffer=buffer;filter.type=impact?'lowpass':'bandpass';filter.frequency.value=impact?380:1700;gain.gain.value=impact?.25:.08;source.connect(filter).connect(gain).connect(audio.destination);source.start();source.onended=()=>{source.disconnect();filter.disconnect();gain.disconnect();};}
+ function clear(){for(const s of slots)s.active=s.g.visible=false;flashes.forEach(f=>f.z=0);burst=0;screenLife=0;screen.style.opacity='0';}
+ function reset(e){exits=e;time=waves=shots=hits=protection=0;next=2;scenic=.2;clear();try{if(!audio){const C=window.AudioContext||window.webkitAudioContext;if(C)audio=new C();}audio?.resume().catch(()=>{});}catch{}}
+ function launch(x,z){if(exits.some(e=>Math.hypot(x-e.point.x,z-e.point.z)<11))return;const s=slots.find(s=>!s.active);if(!s)return;Object.assign(s,{active:true,age:0,hit:false,x,z,warning:.98});s.g.position.set(x,terrainHeight(x,z)+.04,z);s.g.visible=true;s.flash.visible=false;s.fragments.visible=false;s.sparks.material.opacity=0;shots++;}
+ function wave(){const v=getVelocity(),yaw=taxi.rotation.y,rx=Math.cos(yaw),rz=-Math.sin(yaw),fx=-Math.sin(yaw),fz=-Math.cos(yaw),x=taxi.position.x+v.x*.98,z=taxi.position.z+v.z*.98;
+  if(waves%4===0&&burst===1){for(const side of [-1,1])for(const ahead of [-4,6])launch(x+rx*side*7+fx*ahead,z+rz*side*7+fz*ahead);}
+  else{const offset=waves%3===0?Math.sin(time*2)*2.5:0;launch(x+rx*offset,z+rz*offset);if(near>.55&&waves%3===1)launch(x-rx*7+fx*7,z-rz*7+fz*7);}
+  sound();
+ }
+ function update(dt){if(dt<=0)return;time+=dt;protection=Math.max(0,protection-dt);screenLife=Math.max(0,screenLife-dt);screen.style.opacity=String(screenLife/.22*.36);near=T.MathUtils.clamp(1-Math.min(...exits.map(e=>Math.hypot(e.point.x-taxi.position.x,e.point.z-taxi.position.z)))/420,0,1);
+  scenic-=dt;if(scenic<=0){const yaw=taxi.rotation.y+Math.sin(time*1.7)*.7,distance=45+(Math.sin(time*.83)*.5+.5)*140;launch(taxi.position.x-Math.sin(yaw)*distance,taxi.position.z-Math.cos(yaw)*distance);scenic=.48;}
+  next-=dt;if(next<=0){if(!burst){waves++;burst=waves%3===0?(near>.5?3:2):1;}wave();burst--;next=burst?.34:waves%4===0?3.4:2.3-near*1.15;}
+  slots.forEach((s,i)=>{flashes[i].z=0;if(!s.active)return;s.age+=dt;const impact=s.age-s.warning;
+   if(impact<0){s.aura.material.opacity=.025;s.ring.scale.setScalar(1);s.beam.material.opacity=.065+.085*s.age/s.warning;s.beam.scale.set(1,1,1);s.ring.material.opacity=.18+.2*s.age/s.warning;return;}
+   if(!s.hit){s.hit=true;sound(true);const dist=Math.hypot(taxi.position.x-s.x,taxi.position.z-s.z);if(dist<1.5&&protection===0){hits++;protection=1.65;const strength=T.MathUtils.clamp(1-dist/1.5*.7,.3,1),dx=taxi.position.x-s.x,dz=taxi.position.z-s.z;onHit?.({strength,x:Math.hypot(dx,dz)>.2?dx:Math.cos(taxi.rotation.y),z:Math.hypot(dx,dz)>.2?dz:-Math.sin(taxi.rotation.y)});screenLife=.22;next=Math.max(next,1.2);}}
+   const power=Math.max(0,1-impact/.48);s.beam.material.opacity=power;s.aura.material.opacity=power*.22;s.beam.scale.set(impact<.08?2.2:1,1,impact<.08?2.2:1);s.ring.material.opacity=power*.85;s.ring.scale.setScalar(1+impact*9);s.flash.visible=true;s.flash.material.opacity=power*.75;s.sparks.material.opacity=power;s.sparks.scale.setScalar(1+impact*5);s.fragments.visible=true;for(let j=0;j<6;j++){const a=j*2.4;fragmentPose.position.set(Math.cos(a)*impact*9,.25+impact*(8+j)-impact*impact*15,Math.sin(a)*impact*9);fragmentPose.rotation.set(impact*8+j,impact*6,j);fragmentPose.scale.setScalar(.6+j*.15);fragmentPose.updateMatrix();s.fragments.setMatrixAt(j,fragmentPose.matrix);}s.fragments.instanceMatrix.needsUpdate=true;flashes[i].set(s.x,s.z,power);
+   if(impact>.48){s.active=s.g.visible=false;flashes[i].z=0;}
+  });
+ }
+ return {group,flashes,reset,clear,respite(){clear();next=2;protection=1.65;},update,get stats(){return{shots,hits,near,next,burst,protection,audioState:audio?.state,active:slots.filter(s=>s.active).map(s=>({x:s.x,z:s.z,age:s.age,warning:s.warning,impact:s.hit})),capacity:slots.length}}};
+}
+let texture;
+function flashTexture(T){if(texture)return texture;const c=document.createElement('canvas');c.width=c.height=64;const ctx=c.getContext('2d'),g=ctx.createRadialGradient(32,32,0,32,32,32);g.addColorStop(0,'white');g.addColorStop(.15,'rgba(255,250,225,.8)');g.addColorStop(1,'rgba(255,250,225,0)');ctx.fillStyle=g;ctx.fillRect(0,0,64,64);return texture=new T.CanvasTexture(c);}
