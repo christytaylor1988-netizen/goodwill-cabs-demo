@@ -23,3 +23,26 @@ body.hud-clean #hudMenuButton,body.hud-clean #guidance,body.hud-clean #job,body.
 
 /* The compact fare panel retains the actual junction instruction. */
 body[data-job=pickup] #guidance #turnCue,body[data-job=dropoff] #guidance #turnCue{display:block;font-size:10px;letter-spacing:.04em;margin:2px 0 0;color:#e2e9ef}
+
+/* Destination plus full remaining journey distance, while retaining the turn cue. */
+body[data-job=pickup] #guidance #targetName,body[data-job=dropoff] #guidance #targetName{display:inline;font-size:16px;line-height:1.35}
+body[data-job=pickup] #guidance #distance,body[data-job=dropoff] #guidance #distance{display:inline;font-size:16px;font-weight:750;white-space:nowrap}
+body[data-job=pickup] #guidance #distance::before,body[data-job=dropoff] #guidance #distance::before{content:' — ';color:#ccd7dd}
+#guidance #fareValue{display:block;margin:2px 0 0}
+#guidance{width:min(430px,calc(100vw - 122px))}
+
+/* Compact instrument cluster, driven by existing vehicle state. */
+#speed,body.map-off #speed{width:218px;min-width:0;padding:8px 11px;border:1px solid #65727b;border-radius:12px;background:linear-gradient(145deg,#17222bf5,#080e14f5);box-shadow:inset 0 0 0 2px #ffffff08,0 3px 12px #0004;text-align:left;color:#edf2f5}
+.cluster-drive{display:flex;align-items:baseline;gap:6px}#speed #speedNumber{font-family:ui-monospace,SFMono-Regular,monospace;font-size:42px;line-height:46px;letter-spacing:-2px;font-weight:700;min-width:64px;text-align:right}#speed #mph{font-size:9px;color:#b6c2cb;letter-spacing:1px}.cluster-gears{display:flex;gap:2px;margin-left:auto;align-self:center;border-left:1px solid #ffffff1c;padding-left:8px}.cluster-gears span{font-size:10px;color:#75838d;padding:3px;border:1px solid transparent;border-radius:3px}.cluster-gears .active{color:#8dd8de;border-color:#70bec6;background:#78d8dd14}
+#speed #gear{display:none}
+#speed #pickupHUD{position:static;max-width:none;padding:0;background:none;border-radius:0;color:inherit;font-size:10px!important}.cluster-stats{display:grid;grid-template-columns:1fr 1fr;gap:12px;border-top:1px solid #ffffff20;padding-top:5px}.cluster-stats>div{display:grid;grid-template-columns:1fr auto;align-items:center;gap:2px}.cluster-stats span,.cluster-turbo>span{font-size:7px;letter-spacing:.5px;color:#aab7c0}.cluster-stats strong{font-size:12px;font-variant-numeric:tabular-nums}.cluster-stats small{font-size:8px;margin-left:1px;color:#aab7c0}.cluster-stats i{grid-column:1/-1;height:2px;background:linear-gradient(to right,#8dd8de var(--level),#ffffff15 var(--level));border-radius:2px}.cluster-turbo{display:flex;justify-content:space-between;margin-top:5px}.cluster-turbo strong{font-size:8px;letter-spacing:.5px;color:#8dd8de}
+/* Quiet when off shift; compact dispatch and navigation when useful. */
+#guidance{width:fit-content;max-width:min(390px,calc(100vw - 122px));min-height:0;padding:7px 11px 7px 43px;border-radius:8px}
+#guidance #arrow,#guidance #arrow svg{width:24px;height:24px;line-height:24px}#guidance #arrow{left:10px;top:14px}
+#guidance #targetLabel{font-size:8px;letter-spacing:1.2px}#guidance #targetName{font-size:13px;line-height:1.3;margin:2px 0 0}
+body[data-job=pickup] #guidance #targetName,body[data-job=dropoff] #guidance #targetName,body[data-job=pickup] #guidance #distance,body[data-job=dropoff] #guidance #distance{font-size:14px}
+#guidance #fareValue{display:none}
+body:not([data-job=pickup]):not([data-job=dropoff]) #guidance{padding:7px 12px}
+body:not([data-job=pickup]):not([data-job=dropoff]) #guidance #arrow,body:not([data-job=pickup]):not([data-job=dropoff]) #guidance #stopTrack{display:none}
+body[data-job=off-duty] #guidance{display:none}
+@media(max-width:600px){#speed,body.map-off #speed{width:190px;padding:7px 9px}#speed #speedNumber{font-size:36px;line-height:40px;min-width:56px}#passengerChat{bottom:145px}#guidance{max-width:calc(100vw - 110px)}}

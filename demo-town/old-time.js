@@ -1,8 +1,9 @@
+import { createPortalGlow } from "./portal-glow.js?v=red-halo-3";
 import { createOldTimeSpheres } from "./old-time-spheres.js?v=mega-2";
 // Old Time landscape and cash trails. Normal world visibility is restored after every render.
 export function createOldTime(THREE,api){
  const {scene,taxi,ground,coast,roads,terrainHeight,roadWidthForType,convertPosition,nearestDrivePoint}=api;
- let active=false,cooldown=0;const previous=taxi.position.clone();
+ const glows=[];let active=false,cooldown=0;const previous=taxi.position.clone();
  const world=new THREE.Group();world.name='Old Time landscape';world.visible=false;scene.add(world);
  const portalRoot=new THREE.Group();portalRoot.name='Old Time portals';scene.add(portalRoot);
  const mat=c=>new THREE.MeshStandardMaterial({color:c,roughness:1});
@@ -29,9 +30,9 @@ export function createOldTime(THREE,api){
  const trackGeo=new THREE.BufferGeometry();trackGeo.setAttribute('position',new THREE.Float32BufferAttribute(track,3));trackGeo.setAttribute('uv',new THREE.Float32BufferAttribute(trackUV,2));trackGeo.computeVertexNormals();const tracks=new THREE.Mesh(trackGeo,dirt);tracks.receiveShadow=true;world.add(tracks);
  const entry=api.portalEntry||nearestDrivePoint(convertPosition(50.85255,.5664)),leave=nearestDrivePoint(convertPosition(50.85215,.5643));
  let yaw=Math.atan2(-(entry.segment.b.x-entry.segment.a.x),-(entry.segment.b.z-entry.segment.a.z));if(-Math.sin(yaw)>0)yaw+=Math.PI;
- function gate(road,label,colour){const g=new THREE.Group(),ring=new THREE.Mesh(new THREE.TorusGeometry(3.3,.15,6,40),new THREE.MeshBasicMaterial({color:colour}));g.add(ring);g.position.set(road.point.x,terrainHeight(road.point.x,road.point.z)+3.4,road.point.z);g.rotation.y=yaw;
+ function gate(road,label,colour){const g=new THREE.Group(),ring=new THREE.Mesh(new THREE.TorusGeometry(3.3,.15,6,40),new THREE.MeshBasicMaterial({color:colour,toneMapped:false}));g.add(ring);glows.push(createPortalGlow(THREE,g,colour));g.position.set(road.point.x,terrainHeight(road.point.x,road.point.z)+3.4,road.point.z);g.rotation.y=yaw;
  if(label){const c=document.createElement('canvas');c.width=512;c.height=128;const ctx=c.getContext('2d');ctx.fillStyle='#192820';ctx.fillRect(0,0,512,128);ctx.fillStyle='#f7edc9';ctx.textAlign='center';ctx.font='bold 48px sans-serif';ctx.fillText(label,256,57);ctx.font='24px sans-serif';ctx.fillText('DRIVE THROUGH',256,99);const tex=new THREE.CanvasTexture(c);tex.colorSpace=THREE.SRGBColorSpace;const sign=new THREE.Sprite(new THREE.SpriteMaterial({map:tex}));sign.position.y=4.25;sign.scale.set(6,1.5,1);g.add(sign);}portalRoot.add(g);return g;}
- const entrance=gate(entry,null,0xd8cb79),exit=gate(leave,'RETURN TO HASTINGS',0x9ccfa9);exit.visible=false;
+ const entrance=gate(entry,null,0xff092e),exit=gate(leave,'RETURN TO HASTINGS',0xff092e);exit.visible=false;
  const spheres=createOldTimeSpheres(THREE,{world,roads,entry:entry.point,exit:leave.point,surface,award:api.awardCash});
  // Modest instanced vegetation around the first playable coastal area.
  let seed=908;const rand=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296};
@@ -39,13 +40,19 @@ export function createOldTime(THREE,api){
  function plant(geo,m,x,y,z,sx,sy,sz){let list=batches.get(m);if(!list)batches.set(m,list={geo,matrices:[]});dummy.position.set(x,y,z);dummy.scale.set(sx,sy,sz);dummy.rotation.set(0,rand()*6.28,0);dummy.updateMatrix();list.matrices.push(dummy.matrix.clone());}
  let plants=0;for(let i=0;i<1900;i++){const close=i>=1600,x=entry.point.x+(rand()-.5)*(close?550:1800),z=entry.point.z-(close?100:90)+(rand()-.5)*(close?200:1400),r=coast.promenadeAt(x);if(r&&z>r.edge-8)continue;const near=nearestDrivePoint({x,z});if(!near||near.distance<roadWidthForType(near.segment.type)/2+5)continue;const y=terrainHeight(x,z),tree=rand()>.75,size=tree?2+rand()*2.6:.6+rand()*1.2;if(tree){plant(trunkGeo,bark,x,y+size*.65,z,1,size*1.3,1);for(let j=0;j<3;j++)plant(shrubGeo,greens[j%3],x+(j-1)*size*.45,y+size*(1.2+(j===1?.3:0)),z+(rand()-.5)*size*.4,size*.8,size*.65,size*.75);}else plant(shrubGeo,greens[i%4],x,y+size*.45,z,size,size*.6,size*.8);plants++;}
  for(const [m,b]of batches){const mesh=new THREE.InstancedMesh(b.geo,m,b.matrices.length);b.matrices.forEach((v,i)=>mesh.setMatrixAt(i,v));mesh.castShadow=true;mesh.receiveShadow=true;mesh.computeBoundingSphere();world.add(mesh);}
- const style=document.createElement('style');style.textContent='body.old-time #job,body.old-time #guidance,body.old-time #pickupHUD,body.old-time #hyperHUD,body.old-time #dialogue{display:none!important}#oldTimeBadge{position:fixed;top:14px;left:50%;transform:translateX(-50%);padding:9px 16px;background:#26352be8;color:#efe6bc;border:1px solid #ada779;border-radius:7px;font:13px system-ui;z-index:1110;pointer-events:none}body.hud-clean #oldTimeBadge{display:none}';document.head.append(style);
- const badge=document.createElement('div');badge.id='oldTimeBadge';badge.hidden=true;document.body.append(badge);
+ const style=document.createElement('style');style.textContent='body.old-time #job,body.old-time #guidance,body.old-time #pickupHUD,body.old-time #hyperHUD,body.old-time #dialogue{display:none!important}#oldTimeReadout{position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:1110;display:flex;align-items:center;gap:24px;padding:9px 18px;border-radius:9px;background:#07100ddb;color:#fff;pointer-events:none;font:700 30px/1.1 monospace;font-variant-numeric:tabular-nums}#oldTimeReadout[hidden]{display:none}#oldTimeCash{font-size:24px;color:#e3f6dc}';document.head.append(style);
+ const badge=document.createElement('div');badge.id='oldTimeReadout';badge.hidden=true;
+ const timer=document.createElement('time');timer.id='oldTimeCountdown';timer.setAttribute('role','timer');timer.setAttribute('aria-label','Time remaining');
+ const cash=document.createElement('span');cash.id='oldTimeCash';cash.setAttribute('aria-label','Cash collected');badge.append(timer,cash);document.body.append(badge);
+ let remaining=0;
+ function switchMode(next){active=next;remaining=active?166:0;if(!active){taxi.position.set(leave.point.x,terrainHeight(leave.point.x,leave.point.z)+.15,leave.point.z);taxi.rotation.y=Math.atan2(-(leave.segment.b.x-leave.segment.a.x),-(leave.segment.b.z-leave.segment.a.z));}spheres.reset();cooldown=3;world.visible=active;entrance.visible=!active;exit.visible=active;badge.hidden=!active;document.body.classList.toggle('old-time',active);api.onSwitch(active);}
  function crossing(g){const a=previous,b=taxi.position,dx=b.x-a.x,dz=b.z-a.z;if(dx*dx+dz*dz>900)return false;const t=THREE.MathUtils.clamp(((g.position.x-a.x)*dx+(g.position.z-a.z)*dz)/(dx*dx+dz*dz||1),0,1);return Math.hypot(a.x+t*dx-g.position.x,a.z+t*dz-g.position.z)<2.7;}
- function update(dt){cooldown=Math.max(0,cooldown-dt);portalRoot.visible=!api.blocked();if(!api.blocked()&&cooldown===0&&crossing(active?exit:entrance)){active=!active;if(!active){taxi.position.set(leave.point.x,terrainHeight(leave.point.x,leave.point.z)+.15,leave.point.z);taxi.rotation.y=Math.atan2(-(leave.segment.b.x-leave.segment.a.x),-(leave.segment.b.z-leave.segment.a.z));}spheres.reset();cooldown=3;world.visible=active;entrance.visible=!active;exit.visible=active;badge.hidden=!active;document.body.classList.toggle('old-time',active);api.onSwitch(active);}
- if(active){spheres.update(previous,taxi.position);badge.textContent='OLD TIME · Red spheres '+spheres.count+'/'+spheres.total+' · +£'+(spheres.earned/100).toFixed(2)+' · Cash £'+(api.getCash()/100).toFixed(2)+' · Return '+Math.round(taxi.position.distanceTo(exit.position))+' m';}previous.copy(taxi.position);}
+ function update(dt){for(const glow of glows)glow.update(dt);cooldown=Math.max(0,cooldown-dt);portalRoot.visible=!api.blocked();
+ if(active){remaining=Math.max(0,remaining-dt);if(remaining===0)switchMode(false);}
+ if(!api.blocked()&&cooldown===0&&crossing(active?exit:entrance))switchMode(!active);
+ if(active){spheres.update(previous,taxi.position);const seconds=Math.ceil(remaining);timer.textContent=String(Math.floor(seconds/60)).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0');cash.textContent='£'+(spheres.earned/100).toFixed(2);}previous.copy(taxi.position);}
  function render(renderer,camera,after){if(!active)return false;const visibility=[],gullPositions=[];const keep=new Set([taxi,world,portalRoot,...api.getGullGroups()]);for(const o of scene.children){visibility.push([o,o.visible]);const weather=o.material?.uniforms?.skyTint===undefined&&o.renderOrder===-40;const light=o.isLight&&!o.isPointLight;const allowed=keep.has(o)||weather||light||o===api.rain; o.visible=allowed&&o.visible;}
  for(const b of api.getBirds()){if(['walk','perch'].includes(b.state)){gullPositions.push([b.g,b.g.position.y]);b.g.position.y=surface(b.g.position.x,b.g.position.z)+.38;}}
  water.color.copy(api.waterMaterial.color);try{renderer.render(scene,camera);after?.();}finally{for(const [o,v]of visibility)o.visible=v;for(const [g,y]of gullPositions)g.position.y=y;}return true;}
- return {spheres,update,render,surface,isSea:(x,z)=>{const r=coast.promenadeAt(x);return r?z>=r.sea:false},entry:entry.point,yaw,exit:leave.point,plants,get active(){return active}};
+ return {spheres,update,render,surface,isSea:(x,z)=>{const r=coast.promenadeAt(x);return r?z>=r.sea:false},entry:entry.point,yaw,exit:leave.point,plants,get remaining(){return remaining},get active(){return active}};
 }

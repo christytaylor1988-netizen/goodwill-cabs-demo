@@ -1,3 +1,4 @@
+import {createPedestrian} from './pedestrian-pool.js?v=local-2';
 // Static station landmark based on the supplied frontage photographs.
 // No updates, animation, lights or external assets: geometry is batched by material.
 export function addHastingsStation(THREE,{scene,shared,convertPosition,terrainHeight,batchScenery,registerBuilding,landmarkPolys,findNearestRoadPoint,roadWidthForType}){
@@ -68,9 +69,9 @@ export function addHastingsStation(THREE,{scene,shared,convertPosition,terrainHe
   bus(x,z,label);
  }
  const skins=[mat(0xc99774),mat(0x8c6048),mat(0xe0b494)],clothes=[mat(0x6e3346),mat(0x3b5369),mat(0xaca189),mat(0x39433e)],trousers=mat(0x354354),hair=mat(0x3b3028);
- function person(x,z,i){const y=floor(x,z),h=i===5?.87:1,cloth=clothes[i%4],skin=skins[i%3],P=(a,b,c)=>v(x+a*h,y+b*h,z+c*h);rod(P(-.12,.12,.05),P(-.11,.78,0),.08,trousers);rod(P(.14,.12,-.03),P(.1,.78,0),.08,trousers);box(.43*h,.65*h,.28*h,x,y+1.03*h,z,cloth);rod(P(-.25,1.3,0),P(-.32,.79,.14),.07,cloth);rod(P(.25,1.3,0),P(.3,.92,.22),.07,cloth);const head=new THREE.Mesh(new THREE.SphereGeometry(.17*h,10,7),skin);head.position.copy(P(0,1.56,0));g.add(head);const cap=new THREE.Mesh(new THREE.SphereGeometry(.173*h,10,6,0,Math.PI*2,0,Math.PI*.43),hair);cap.position.copy(head.position);g.add(cap);box(.18*h,.1*h,.31*h,x-.12*h,y+.08*h,z+.07, rubber);box(.18*h,.1*h,.31*h,x+.14*h,y+.08*h,z+.01,rubber);if(i%2===0)box(.26,.35,.15,x-.34,y+.65,z+.13,navy);}
+ function person(x,z,i){const {g:person}=createPedestrian(THREE,[11,3,1,4,12,6,15,0][i]);person.position.set(x,floor(x,z),z);person.rotation.y=i%2?.4:-.35;g.add(person);}
  [[-5,1.4],[-3.8,1.8],[-1.2,1.3],[.1,1.7],[3,1.6],[4.1,1.7],[8,1.2],[25,1.6]].forEach(([x,z],i)=>person(x,z,i));
- g.position.set(origin.x,base,origin.z);g.rotation.y=Math.atan2(nx,nz);scene.add(g);batchScenery({group:g});g.position.set(0,0,0);g.rotation.set(0,0,0);
+ g.position.set(origin.x,base,origin.z);g.rotation.y=Math.atan2(nx,nz);scene.add(g);g.updateMatrixWorld(true);for(const child of [...g.children])if(child.isGroup)scene.attach(child);batchScenery({group:g});g.position.set(0,0,0);g.rotation.set(0,0,0);
  g.userData={station:true,buses:2,waitingPeople:8,anchor:origin,front:world(0,0),busSites,preview:world(-8,42)};
  return g;
 }

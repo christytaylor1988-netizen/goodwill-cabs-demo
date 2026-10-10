@@ -1,0 +1,36 @@
+// Focused furniture and landscaping inside the mapped triangular garden.
+export function addCornwallisGardens(THREE,{scene,shared,mapData,convertPosition,terrainHeight,inRing,groundPatch,pavingMaterial,textSign,batchScenery}){
+ const feature=mapData.land.find(f=>f.id===486878228);if(!feature)return;
+ const ring=feature.geometry.slice(0,-1).map(p=>{const q=convertPosition(p.lat,p.lon);return new THREE.Vector2(q.x,q.z)}),root=new THREE.Group();root.name='Cornwallis Gardens';scene.add(root);
+ const mats=new Map(),mat=c=>{if(!mats.has(c))mats.set(c,shared(new THREE.MeshStandardMaterial({color:c,roughness:1})));return mats.get(c)};
+ const box=shared(new THREE.BoxGeometry(1,1,1)),ball=shared(new THREE.IcosahedronGeometry(1,1)),rod=shared(new THREE.CylinderGeometry(1,1,1,7));
+ function part(g,geo,c,x,y,z,w,h,d){const m=new THREE.Mesh(geo,mat(c));m.position.set(x,y,z);m.scale.set(w,h,d);g.add(m);return m;}
+ const cube=(g,c,x,y,z,w,h,d)=>part(g,box,c,x,y,z,w,h,d);
+ function site(lat,lon,yaw=0){const p=convertPosition(lat,lon),g=new THREE.Group();g.position.set(p.x,terrainHeight(p.x,p.z)+.10,p.z);g.rotation.y=yaw;root.add(g);return g;}
+ const paths=[];
+ function path(a,b,width){paths.push({a,b,width});const dx=b.x-a.x,dz=b.y-a.y,len=Math.hypot(dx,dz),nx=-dz/len*width/2,nz=dx/len*width/2;
+  for(let i=0;i<Math.ceil(len/3);i++){const n=Math.ceil(len/3),u=i/n,v=(i+1)/n,poly={outer:[new THREE.Vector2(a.x+dx*u+nx,a.y+dz*u+nz),new THREE.Vector2(a.x+dx*v+nx,a.y+dz*v+nz),new THREE.Vector2(a.x+dx*v-nx,a.y+dz*v-nz),new THREE.Vector2(a.x+dx*u-nx,a.y+dz*u-nz)],holes:[]};const m=groundPatch(poly,pavingMaterial,.11),p=m.geometry.attributes.position,uv=[];for(let j=0;j<p.count;j++)uv.push(p.getX(j)/2.24,p.getZ(j)/2.24);m.geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));root.add(m);}}
+ for(const f of mapData.paths.filter(f=>[486879433,508678173].includes(f.id))){const ps=f.geometry.map(p=>{const q=convertPosition(p.lat,p.lon);return new THREE.Vector2(q.x,q.z)});for(let i=1;i<ps.length;i++)path(ps[i-1],ps[i],2.2);}
+ // Perimeter pedestrian strip follows the garden edge; roads retain their existing shape.
+ const centre=ring.reduce((a,p)=>a.add(p),new THREE.Vector2()).multiplyScalar(1/ring.length);
+ const edge=ring.map(p=>p.clone().lerp(centre,.018));for(let i=0;i<edge.length;i++)path(edge[i],edge[(i+1)%edge.length],2.0);
+ function nearPath(x,z){return paths.some(({a,b,width})=>{const dx=b.x-a.x,dz=b.y-a.y,t=Math.max(0,Math.min(1,((x-a.x)*dx+(z-a.y)*dz)/(dx*dx+dz*dz)));return Math.hypot(x-a.x-dx*t,z-a.y-dz*t)<width/2+2.0})}
+ let seed=319;const rnd=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296};const xs=ring.map(p=>p.x),zs=ring.map(p=>p.y),placed=[];
+ for(let i=0;i<450&&placed.length<30;i++){const x=Math.min(...xs)+rnd()*(Math.max(...xs)-Math.min(...xs)),z=Math.min(...zs)+rnd()*(Math.max(...zs)-Math.min(...zs));if(!inRing(x,z,ring)||nearPath(x,z)||placed.some(p=>Math.hypot(x-p.x,z-p.z)<7))continue;placed.push({x,z});const y=terrainHeight(x,z),h=8+rnd()*5;part(root,rod,0x655849,x,y+h*.37,z,.24+rnd()*.15,h*.74,.26);for(let j=0;j<3;j++){const a=j*2.1+rnd(),bx=x+Math.cos(a)*1.5,bz=z+Math.sin(a)*1.5;part(root,ball,[0x405b37,0x587142,0x6d7b49][j],bx,y+h*.73+j*.6,bz,2.1+rnd(),2.7+rnd(),2.2+rnd());}}
+ function bench(lat,lon,yaw){const g=site(lat,lon,yaw);for(const x of [-.9,.9]){cube(g,0x252f2b,x,.28,0,.08,.55,.6);cube(g,0x252f2b,x,.68,-.26,.07,.8,.07);cube(g,0x252f2b,x,.73,.05,.07,.05,.65);}for(let j=0;j<4;j++){cube(g,0x77735a,0,.49,-.23+j*.15,2.15,.065,.12);cube(g,0x77735a,0,.72+j*.10,-.28,2.15,.07,.06);}return g;}
+ const benches=[bench(50.85669,.57491,-.6),bench(50.85692,.57513,1.7),bench(50.85701,.57455,.2)];
+ function person(g,x,colour,pose){const p=new THREE.Group();p.position.x=x;g.add(p);const seated=pose!=='stand',hip=seated?.57:.88;cube(p,colour,0,hip+.27,0,.42,.52,.29);part(p,ball,0xb98e71,0,hip+.69,.02,.14,.18,.14);part(p,ball,0x51473e,0,hip+.8,0,.15,.08,.14);for(const side of [-1,1]){cube(p,0x454b50,side*.13,seated?.49:.45,seated?.24:0,.16,seated?.17:.82,seated?.55:.18);if(seated)cube(p,0x454b50,side*.13,.26,.46,.14,.5,.16);cube(p,0x303431,side*.13,.08,seated?.53:.07,.18,.12,.27);cube(p,colour,side*.26,hip+.19,.12,.12,.43,.14);}const hy=hip+.44;cube(p,colour,.24,hy,.29,.13,.14,.35);part(p,ball,0xb98e71,.24,hy,.46,.065,.07,.06);
+ if(pose==='smoke'){cube(p,0xdfd7b8,.24,hy,.54,.018,.018,.13);cube(p,0xa85534,.24,hy,.608,.02,.02,.02);for(let j=0;j<3;j++){const smoke=part(p,ball,0xa2aaa4,.25+j*.035,hy+.13+j*.13,.55,.035+j*.01,.065,.035);smoke.material=shared(new THREE.MeshBasicMaterial({color:0xc7cbc8,transparent:true,opacity:.16,depthWrite:false}));}}
+ else if(pose==='drink'||pose==='stand'){part(p,rod,0xaaa886,.24,hy+.07,.46,.047,.15,.047);cube(p,0x556b51,.24,hy+.07,.507,.06,.075,.012);}}
+ person(benches[0],-.32,0x566773,'smoke');person(benches[1],-.5,0x69674f,'drink');person(benches[1],.48,0x655b68,'drink');const companion=site(50.8569,.57510,2);person(companion,0,0x53616b,'stand');person(benches[2],.3,0xa67f67,'sit');
+ const entrance=site(50.85635,.575205,-.55);for(const x of [-1.5,1.5]){part(entrance,rod,0x234b3f,x,1.5,0,.065,3,.065);part(entrance,ball,0x234b3f,x,3.05,0,.12,.12,.12);}
+ const arc=new THREE.Mesh(new THREE.TorusGeometry(1.5,.055,5,24,Math.PI),mat(0x234b3f));arc.scale.y=.3;arc.position.y=2.75;entrance.add(arc);textSign(entrance,'CORNWALLIS GARDENS',2.85,.35,0,2.8,.035,'#234b3f','#eadfbb');
+ // Three real corners of the triangular park, each with a recycling bank and irregular dumping.
+ for(const [i,ll] of [[50.85704,.574105],[50.85708,.57525],[50.85633,.57519]].entries()){const g=site(...ll,i*1.7);cube(g,0x40584b,0,.77,0,1.4,1.5,.95);part(g,rod,0x253d34,0,1.52,0,.72,.15,.5);cube(g,0x151f1c,0,1.21,.49,.93,.22,.025);textSign(g,'RECYCLING',1.1,.24,0,.91,.49,'#b8c0a0','#243b32');
+ const mattress=cube(g,0xa89d83,1.55,.33,.4,1.15,.25,1.9);mattress.rotation.set(.1,.35+i*.25,.15);for(let j=0;j<6;j++)cube(g,0x827b69,1.3+(j%2)*.42,.48,.0+Math.floor(j/2)*.45,.16,.018,.10);
+ for(let j=0;j<7;j++){const x=-1.5+rnd()*1.1,z=-.6+rnd()*1.7;part(g,ball,j%2?0x353c38:0x514e47,x,.19+rnd()*.12,z,.2+rnd()*.16,.24+rnd()*.13,.25);}
+ const chair=new THREE.Group();chair.position.set(.7,.45,-1.0);chair.rotation.set(.7,.5,-.8);g.add(chair);cube(chair,0x76614a,0,.3,0,.52,.07,.5);cube(chair,0x76614a,0,.62,-.22,.5,.56,.06);for(const x of [-.2,.2])cube(chair,0x494d47,x,.08,.16,.05,.46,.05);
+ cube(g,0x9b896b,-.6,.24,-1.0,.66,.45,.58).rotation.y=.65;cube(g,0xb8b7a8,1.1,.45,-.65,.5,.8,.48).rotation.z=.15;for(let j=0;j<5;j++)cube(g,0x827c68,-1+rnd()*2,.1,1.1+rnd()*.4,.25,.08,.2).rotation.y=rnd()*3;}
+ for(const ll of [[50.85708,.5744],[50.85709,.57515],[50.85675,.57524],[50.8564,.5752],[50.85665,.57469]]){const g=site(...ll);part(g,rod,0x343d38,0,2.45,0,.055,4.9,.055);cube(g,0x343d38,.23,4.85,0,.55,.10,.24);cube(g,0xf3dcb0,.23,4.79,0,.42,.035,.18);}
+ root.updateMatrixWorld(true);const meshes=[];root.traverse(o=>{if(o.isMesh)meshes.push(o)});for(const m of meshes){m.geometry=m.geometry.clone().applyMatrix4(m.matrixWorld);m.position.set(0,0,0);m.quaternion.identity();m.scale.set(1,1,1);root.add(m);}for(const c of [...root.children])if(!c.isMesh)root.remove(c);batchScenery({group:root});return root;
+}
