@@ -1,8 +1,11 @@
+export const DAY_CYCLE_SECONDS = 7 * 60; // Preview: change to 20 * 60 or 30 * 60 later.
 // First weather study: one rain draw call and an inexpensive world-space road finish.
 // No reflection buffers, extra lights, audio, or changes to vehicle handling.
-export function createWeather(THREE,{scene,taxi,roadMaterial,pavementMaterial,hemisphere,sun,signMaterial}){
+export function createWeather(THREE,{scene,taxi,roadMaterial,pavementMaterial,hemisphere,sun,signMaterial,waterMaterial}){
  const skyTop={value:new THREE.Color(0x579bd0)},skyHorizon={value:new THREE.Color(0xc4dce5)};
- const sky=new THREE.Mesh(new THREE.SphereGeometry(1000,20,12),new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,depthTest:false,uniforms:{top:skyTop,horizon:skyHorizon},vertexShader:'varying vec3 skyDirection;void main(){skyDirection=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',fragmentShader:'uniform vec3 top;uniform vec3 horizon;varying vec3 skyDirection;void main(){float h=max(0.0,normalize(skyDirection).y);gl_FragColor=vec4(mix(horizon,top,smoothstep(0.0,.32,h)),1.0);\n#include <tonemapping_fragment>\n#include <colorspace_fragment>\n}'}));
+ const moonFade={value:0},moonDirection={value:new THREE.Vector3(.96,.26,-.12).normalize()};
+ // Keep the horizon glow within roughly the lowest fifth of the driving-view sky.
+ const sky=new THREE.Mesh(new THREE.SphereGeometry(1000,20,12),new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,depthTest:false,uniforms:{top:skyTop,horizon:skyHorizon,moonFade,moonDirection},vertexShader:'varying vec3 skyDirection;void main(){skyDirection=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',fragmentShader:'uniform vec3 top;uniform vec3 horizon;uniform float moonFade;uniform vec3 moonDirection;varying vec3 skyDirection;void main(){float h=max(0.0,normalize(skyDirection).y);vec3 dir=normalize(skyDirection);vec3 colour=mix(horizon,top,smoothstep(0.0,.065,h));float angle=acos(clamp(dot(dir,moonDirection),-1.0,1.0));float disc=1.0-smoothstep(.010,.012,angle);float halo=exp(-angle*angle/0.0009)*.055;float maria=.86+.09*sin(dir.x*1900.0)*sin(dir.y*1300.0)+.05*sin(dir.z*2200.0);colour+=moonFade*(disc*maria*vec3(1.0,.92,.76)+halo*vec3(.65,.75,1.0));gl_FragColor=vec4(colour,1.0);\n#include <tonemapping_fragment>\n#include <colorspace_fragment>\n}'}));
  sky.frustumCulled=false;sky.renderOrder=-40;scene.add(sky);
  const wet={value:1};
  roadMaterial.onBeforeCompile=shader=>{
@@ -37,36 +40,50 @@ export function createWeather(THREE,{scene,taxi,roadMaterial,pavementMaterial,he
  const timeProfiles={
   morning:{sky:0xa6d1ec,sun:2.5,ambient:1.9,color:0xffe5bc,hemi:0xddeeff,ground:0x53634d,offset:[-160,110,70]},
   afternoon:{sky:0x77bce9,sun:3.2,ambient:2.05,color:0xfff3d8,hemi:0xddeeff,ground:0x53634d,offset:[-70,200,80]},
-  evening:{sky:0xd6a080,sun:2.25,ambient:.95,color:0xffaf69,hemi:0xb1becf,ground:0x453d40,offset:[170,48,-80]},
-  night:{sky:0x080f20,sun:.23,ambient:.65,color:0x9cb8e0,hemi:0x7792b9,ground:0x202a39,offset:[-90,140,-110]}
+  evening:{sky:0x7394bd,sun:2.25,ambient:.95,color:0xffaf69,hemi:0xb1becf,ground:0x453d40,offset:[170,48,-80]},
+  night:{sky:0x02050c,sun:.17,ambient:.42,color:0x9cb8e0,hemi:0x7792b9,ground:0x202a39,offset:[-90,140,-110]}
  };
- let mode='rain',timeOfDay='afternoon',time=0;
- function followSun(){
-  const offset=timeProfiles[timeOfDay].offset;
-  sun.position.set(taxi.position.x+offset[0],taxi.position.y+offset[1],taxi.position.z+offset[2]);
-  sun.target.position.copy(taxi.position);sun.target.updateMatrixWorld();
- }
+ // Cyclic keyframes; smoothstep gives zero slope at each joined stage.
+ timeProfiles.dusk={sky:0x4f6f9f,sun:.38,ambient:.72,color:0xffb7a2,hemi:0x91a4c5,ground:0x343447,offset:[185,8,-100]};
+ timeProfiles.dawn={sky:0xa48da9,sun:.5,ambient:.85,color:0xffc3ab,hemi:0xbbbdde,ground:0x4b4954,offset:[-190,12,50]};
+ timeProfiles.bluehour={sky:0x10254b,sun:.19,ambient:.52,color:0xaac6ed,hemi:0x6e8dbb,ground:0x202b3c,offset:[-90,140,-110]};
+ timeProfiles.latenight={...timeProfiles.night};
+ const stages=['morning','afternoon','evening','dusk','bluehour','night','latenight','dawn'];
+ const horizon=[0xe2dfce,0xc4dce5,0xf0b18e,0xd1b6c7,0x354b73,0x080f1e,0x080f1e,0xd9adb4].map(c=>new THREE.Color(c));
+ const sea=[0x537e86,0x386f75,0x6e7983,0x566c87,0x203e63,0x10283c,0x10283c,0x536878].map(c=>new THREE.Color(c));
+ const darkness=[0,0,.25,.65,.95,1,1,.5],offset=new THREE.Vector3(),mixColor=new THREE.Color(),weatherColor=new THREE.Color();
+ let mode='rain',timeOfDay='afternoon',time=0,phase=1/8,nightAmount=0,seek=null,seaClock=2;
+ const seaMaterials=new Set([waterMaterial]);
+ function followSun(){sun.position.copy(taxi.position).add(offset);sun.target.position.copy(taxi.position);sun.target.updateMatrixWorld();}
  function apply(){
-  const w=weatherProfiles[mode],t=timeProfiles[timeOfDay],night=timeOfDay==='night',evening=timeOfDay==='evening';
+  const f=phase*stages.length,i=Math.floor(f)%stages.length,j=(i+1)%stages.length,u=f-Math.floor(f),t=u*u*(3-2*u),a=timeProfiles[stages[i]],b=timeProfiles[stages[j]],w=weatherProfiles[mode];
+  const lerp=(a,b)=>a+(b-a)*t;timeOfDay=stages[i];nightAmount=lerp(darkness[i],darkness[j]);
+  const cloud=mode==='sunny'?0:mode==='overcast'?.65:mode==='rain'?.8:.88;
+  weatherColor.setHex(w.sky).multiplyScalar(1-nightAmount*.99);
+  skyTop.value.setHex(a.sky).lerp(mixColor.setHex(b.sky),t).lerp(weatherColor,cloud);
+  skyHorizon.value.copy(horizon[i]).lerp(horizon[j],t).lerp(weatherColor,cloud);
+  moonFade.value=THREE.MathUtils.smoothstep(nightAmount,.55,.97)*(mode==='sunny'?1:mode==='overcast'?.32:mode==='rain'?.14:.06);
+  sky.visible=true;scene.background.copy(skyHorizon.value);scene.fog.color.copy(skyHorizon.value);
+  scene.fog.near=w.near*(1-nightAmount*.2);scene.fog.far=w.far*(1-nightAmount*.28);
+  hemisphere.intensity=lerp(a.ambient,b.ambient)*w.ambient;
+  hemisphere.color.setHex(a.hemi).lerp(mixColor.setHex(b.hemi),t);hemisphere.groundColor.setHex(a.ground).lerp(mixColor.setHex(b.ground),t);
+  sun.intensity=lerp(a.sun,b.sun)*w.sun;sun.color.setHex(a.color).lerp(mixColor.setHex(b.color),t);
+  offset.set(...a.offset).lerp(new THREE.Vector3(...b.offset),t);followSun();
+  for(const m of seaMaterials)if(m)m.color.copy(sea[i]).lerp(sea[j],t).lerp(weatherColor,.18*cloud);
   const rainy=mode==='rain';wet.value=rainy?1:mode==='fog'?.25:0;
-  scene.background.setHex(w.sky);
-  if(night)scene.background.setHex(mode==='fog'?0x17202c:mode==='sunny'?t.sky:0x101923);
-  else if(evening)scene.background.lerp(new THREE.Color(t.sky),mode==='sunny'?.85:.3);
-  else if(timeOfDay==='morning')scene.background.lerp(new THREE.Color(t.sky),mode==='sunny'?.35:.08);
-  sky.visible=mode==='sunny'&&!night&&!evening;
-  scene.fog.color.copy(scene.background);scene.fog.near=w.near;scene.fog.far=w.far;
-  if(sky.visible)scene.fog.color.copy(skyHorizon.value);
-  hemisphere.intensity=t.ambient*w.ambient;hemisphere.color.setHex(t.hemi);hemisphere.groundColor.setHex(t.ground);
-  sun.intensity=t.sun*w.sun;sun.color.setHex(t.color);followSun();
   roadMaterial.color.setHex(rainy?0x30383b:mode==='fog'?0x454b4b:0x505351);roadMaterial.roughness=rainy?.62:.95;
   pavementMaterial.color.setHex(rainy?0x858f8d:mode==='fog'?0x969e99:0xa9a69d);
-  signMaterial.emissiveIntensity=night?3:evening?1.8:1;
-  rain.visible=rainy;rain.material.opacity=night?.36:.68;
+  signMaterial.emissiveIntensity=1+nightAmount*2;rain.visible=rainy;rain.material.opacity=.68-nightAmount*.32;
  }
  function setMode(next){if(!weatherProfiles[next])return;mode=next;apply()}
- function setTime(next){if(!timeProfiles[next])return;timeOfDay=next;apply()}
+ // Manual time buttons smoothly travel forward to the selected stage over three seconds.
+ function setTime(next){const index=stages.indexOf(next);if(index<0)return;const target=index/stages.length,delta=(target-phase+1)%1;seek={start:phase,delta,elapsed:0};}
  function update(dt){
-  sky.position.copy(taxi.position);
+  const step=Math.max(0,Math.min(dt,.1));
+  if(seek){seek.elapsed+=step;const u=Math.min(1,seek.elapsed/3);phase=(seek.start+seek.delta*u*u*(3-2*u))%1;if(u===1)seek=null;}
+  else phase=(phase+step/DAY_CYCLE_SECONDS)%1;
+  seaClock+=step;if(seaClock>2){seaClock=0;seaMaterials.clear();seaMaterials.add(waterMaterial);scene.traverse(o=>{for(const m of o.material?(Array.isArray(o.material)?o.material:[o.material]):[])if(m.userData.timeCycleSea)seaMaterials.add(m);});}
+  apply();sky.position.copy(taxi.position);
   if(mode!=='rain')return;time+=dt;
   rain.position.set(taxi.position.x,taxi.position.y,taxi.position.z);
   const wind=4.5+Math.sin(time*.33)*1.8;
@@ -79,5 +96,5 @@ export function createWeather(THREE,{scene,taxi,roadMaterial,pavementMaterial,he
   geometry.attributes.position.needsUpdate=true;
  }
  setMode('rain');update(0);
- return {setMode,setTime,followSun,update,rain,wet,get mode(){return mode},get timeOfDay(){return timeOfDay}};
+ return {setMode,setTime,followSun,update,rain,wet,get moonlight(){return moonFade.value},get darkness(){return nightAmount},get phase(){return phase},get mode(){return mode},get timeOfDay(){return timeOfDay}};
 }
