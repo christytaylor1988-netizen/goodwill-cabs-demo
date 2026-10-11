@@ -5,7 +5,7 @@ import {addCarlisleBeach} from './carlisle-beach.js?v=20261004c';
 import {createBottleAlley} from './bottle-alley.js?v=level5';
 import {addLondonRoadClock} from "./london-road-clock.js?v=clock-sightline-final-20260928";
 import {seafrontRailingMaterial} from "./seafront-railing.js";
-import {createEversfield} from "./eversfield-promenade.js?v=local-4";
+import {createEversfield} from "./eversfield-promenade.js?v=surface-tones-1";
 import {addBeachGroynes} from './beach-groynes.js';
 // One joined visual cross-section along the filming coast. Never alters terrainHeight or road meshes.
 export function buildContinuousSeafront(THREE,api){
@@ -26,7 +26,7 @@ export function buildContinuousSeafront(THREE,api){
  // Avoid sudden width/height steps where separately mapped road ways meet.
  for(let pass=0;pass<3;pass++){const copy=rows.map(r=>({...r}));for(let i=1;i<rows.length-1;i++){for(const k of ['prom','sea'])rows[i][k]=(copy[i-1][k]+2*copy[i][k]+copy[i+1][k])/4;}}
  const clone=m=>{const c=shared(m.clone());c.onBeforeCompile=m.onBeforeCompile;c.customProgramCacheKey=m.customProgramCacheKey;c.depthTest=true;c.depthWrite=true;c.side=THREE.DoubleSide;return c};
- const shingle=clone(beachMaterial),water=clone(waterMaterial),paving=clone(pavementMaterial);paving.color.setHex(0xc59b92);
+ const shingle=clone(beachMaterial),water=clone(waterMaterial),paving=clone(pavementMaterial);paving.color.setHex(0x8f6861);
  const wall=shared(new THREE.MeshStandardMaterial({color:0x8b8c80,roughness:1,side:THREE.DoubleSide}));
  const group=new THREE.Group();group.name='Continuous filming seafront';scene.add(group);
  function strip(material,cross,uvScale){const verts=[],uv=[];for(let i=1;i<rows.length;i++){const a=rows[i-1],b=rows[i];for(let j=1;j<cross.length;j++){const aa=cross[j-1](a),ab=cross[j](a),ba=cross[j-1](b),bb=cross[j](b);for(const p of [aa,bb,ba,aa,ab,bb]){verts.push(...p);uv.push(p[0]/uvScale,p[2]/uvScale)}}}const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.computeVertexNormals();const mesh=new THREE.Mesh(g,material);mesh.receiveShadow=true;group.add(mesh);return mesh;}

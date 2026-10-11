@@ -5,9 +5,10 @@ export function createHyperCoins(T,{taxi,terrainHeight,roads}){
  const mesh=new T.InstancedMesh(geometry,new T.MeshBasicMaterial({color:0xffd45c,toneMapped:false}),capacity);
  mesh.name='Hyper arcade coins';mesh.visible=false;mesh.frustumCulled=false;mesh.instanceMatrix.setUsage(T.DynamicDrawUsage);
  function write(i){const p=points[i];dummy.position.set(p.x,p.y+Math.sin(time*2+i)*.12,p.z);dummy.rotation.set(0,time*1.5+i*.7,0);dummy.scale.setScalar(p.taken?0:1);dummy.updateMatrix();mesh.setMatrixAt(i,dummy.matrix);}
+ const roadCandidates=roads.filter(s=>s.length>12).map((s,i)=>({s,i,x:(s.a.x+s.b.x)/2,z:(s.a.z+s.b.z)/2}));
  function reset(origin){
   points.length=0;collected=0;time=0;previous.copy(taxi.position);
-  const candidates=roads.filter(s=>s.length>12).map((s,i)=>({s,i,x:(s.a.x+s.b.x)/2,z:(s.a.z+s.b.z)/2})).filter(p=>{const d=Math.hypot(p.x-origin.x,p.z-origin.z);return d>35&&d<1250;});
+  const candidates=roadCandidates.filter(p=>{const d=Math.hypot(p.x-origin.x,p.z-origin.z);return d>35&&d<1250;});
   // Stable scattered layout, with small strings of coins along existing road directions.
   candidates.sort((a,b)=>((a.i*7919)%104729)-((b.i*7919)%104729));
   for(const p of candidates){if(points.length>=capacity)break;if(points.some(q=>Math.hypot(q.x-p.x,q.z-p.z)<24))continue;

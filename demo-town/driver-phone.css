@@ -35,7 +35,64 @@ body.in-car #cabPhone:has(.phone-collapsed) .phone-guidance{display:none}
 body.in-car .phone-guidance{display:none}
 @media(max-height:650px){#driverPhone .driver-app-screen #miniMapFrame{height:120px!important}#driverPhone{--phone-peek:240px}}
 
-/* Idle / off-shift phone is a plain map beneath the status bar. */
-#driverPhone.phone-map-only{--phone-peek:200px}
-#driverPhone.phone-map-only .driver-app-title,#driverPhone.phone-map-only .driver-job-state{display:none}
-@media(max-height:650px){#driverPhone.phone-map-only{--phone-peek:170px}}
+/* Every dispatch state fills the handset's app area. */
+#driverPhone{display:flex;flex-direction:column;padding-bottom:26px}
+#driverPhone .driver-status{flex:none;justify-content:flex-end}
+#driverPhone .driver-app-screen{display:flex;flex-direction:column;flex:1;min-height:0}
+#driverPhone .driver-app-screen #miniMapFrame{height:130px!important}
+#driverPhone .driver-app-title{flex:none;padding:10px}
+#driverPhone .driver-app-title strong{display:flex;align-items:center;gap:7px;font-size:10px}
+#driverPhone .driver-app-title strong::before{content:'';display:block;flex:none;width:8px;height:8px;border-radius:50%;background:#41d58a}
+#driverPhone.phone-offline .driver-app-title strong::before{background:#eb6b65}
+#driverPhone .driver-app-screen #job{flex:1;min-height:0;max-height:none;padding:15px 12px;overflow:auto}
+#driverPhone .driver-app-screen #job:not([hidden]){display:none}
+body[data-job=offer] #driverPhone .driver-app-screen #job,body[data-job=complete] #driverPhone .driver-app-screen #job{display:flex;flex-direction:column}
+#driverPhone #offerActions{grid-template-columns:1fr;margin-top:auto}
+#driverPhone #offerActions button{padding:10px 8px}
+#driverPhone #offerDetails{padding-top:8px;border-top:1px solid #ccd6d0}
+#driverPhone #jobTitle{font-size:20px}
+#driverPhone .driver-job-state:not([hidden]){display:flex;flex:1;min-height:0;flex-direction:column;justify-content:center;align-items:center;gap:12px;padding:18px 12px;text-align:center}
+#driverPhone .driver-job-state strong{font-size:22px;color:#20302b;letter-spacing:.5px}
+#driverPhone .driver-job-state span{font-size:12px;line-height:1.4;font-weight:400;letter-spacing:0}
+body.map-off #driverPhone .driver-app-screen #miniMapFrame{display:none}
+@media(max-height:650px){#driverPhone .driver-app-screen #miniMapFrame{height:90px!important}#driverPhone .driver-app-screen #job{padding:9px 10px}#driverPhone #jobTitle{font-size:17px}#driverPhone #offerActions button{padding:7px}}
+
+/* Only an actionable offer uses the expanded handset. Keep other states readable. */
+#driverPhone.phone-compact{height:var(--phone-height);--compact-peek:245px}
+#driverPhone.phone-compact:not(.phone-collapsed),body.in-car #driverPhone.phone-compact:not(.phone-collapsed){bottom:0;transform:translateY(calc(100% - var(--compact-peek)))}
+body.in-car #cabPhone:has(.phone-compact){bottom:0}
+#driverPhone.phone-compact .driver-home{display:none}
+#driverPhone.phone-compact .driver-app-screen{border-radius:12px 12px 0 0}
+#driverPhone.phone-compact .driver-job-state:not([hidden]){flex:none;padding:2px 10px;gap:0}
+#driverPhone.phone-compact .driver-job-state strong{font-size:11px;letter-spacing:.6px}
+#driverPhone.phone-compact .driver-job-state span{font-size:11px}
+body[data-job=complete] #driverPhone.phone-compact{--compact-peek:275px}
+body[data-job=complete] #driverPhone.phone-compact #job{flex:none;padding:7px 10px;gap:5px;justify-content:center}
+body[data-job=complete] #driverPhone.phone-compact #phase,body[data-job=complete] #driverPhone.phone-compact #jobText{display:none}
+body[data-job=complete] #driverPhone.phone-compact #jobTitle{font-size:12px;margin:0}
+body[data-job=complete] #driverPhone.phone-compact #nextFare{padding:6px;font-size:11px;margin:0}
+@media(max-height:650px){#driverPhone.phone-compact{--compact-peek:205px}}
+
+/* Give the space saved by the instruction strip to the map, within the same frame. */
+#driverPhone.phone-compact .driver-app-screen #miniMapFrame{height:142px!important}
+@media(max-height:650px){#driverPhone.phone-compact .driver-app-screen #miniMapFrame{height:102px!important}}
+
+/* Realm treatments retain the handset, map and compact status strip. */
+#driverPhone .driver-realm-stats{flex:none;padding:3px 10px;font:700 11px/16px monospace;border-top:1px solid #a6b6ad;box-sizing:border-box}
+#driverPhone .driver-realm-stats[hidden]{display:none}
+#driverPhone #oldTimeReadout{position:static;transform:none;display:flex;justify-content:space-between;gap:8px;padding:0;border:0;border-radius:0;background:none;color:#60462e;font:700 12px/16px monospace}
+#driverPhone #oldTimeReadout[hidden]{display:none}
+#driverPhone #oldTimeCash{font-size:12px;color:#60462e}
+body.hyper-active #driverPhone .driver-app-screen,body.hyper-active #driverPhone .driver-app-title{background:#081410;color:#8fe4b1}
+body.hyper-active #driverPhone .driver-job-state,body.hyper-active #driverPhone .driver-realm-stats{color:#b8dac7;background:#081410;border-top:1px solid #3a805b;box-shadow:inset 1px 0 #254f3b,inset -1px 0 #254f3b}
+body.hyper-active #driverPhone .driver-job-state strong{color:#69efa0}
+body.hyper-active #driverPhone .hyper-phone-coins{color:#efb56b}
+body.old-time #driverPhone .driver-app-screen,body.old-time #driverPhone .driver-app-title{background:#d7c6a5;color:#543f2e}
+body.old-time #driverPhone .driver-app-title span{color:#705d48}
+body.old-time #driverPhone .driver-job-state,body.old-time #driverPhone .driver-realm-stats{background:#dfd1b5;color:#604c37;border-color:#a18b68}
+body.old-time #driverPhone .driver-job-state strong{color:#543f2e}
+body.old-time #driverPhone .driver-app-screen #miniMapFrame{filter:sepia(.35) saturate(.7)}
+body.hyper-active #driverPhone.phone-compact .driver-app-screen #miniMapFrame,body.old-time #driverPhone.phone-compact .driver-app-screen #miniMapFrame{height:120px!important}
+body.hyper-active #driverPhone #job,body.old-time #driverPhone #job{display:none!important}
+body.hyper-active #hyperHUD{display:none!important}
+@media(max-height:650px){body.hyper-active #driverPhone.phone-compact .driver-app-screen #miniMapFrame,body.old-time #driverPhone.phone-compact .driver-app-screen #miniMapFrame{height:80px!important}}

@@ -3,6 +3,8 @@ const pools=new WeakMap();
 export const pedestrianStyles=['casual curls','older flat cap','smart bob','workwear beanie','gym ponytail','heavy jumper','long coat','scruffy hood','silver bun','casual hoodie','older cardigan','smart suit','heavy long hair','short cropped hair','seaside coat','occasional bald'];
 export function createPedestrian(T,seed=0,{seated=false}={}){
  let pool=pools.get(T);if(!pool){pool={templates:new Map(),material:new T.MeshStandardMaterial({vertexColors:true,roughness:1}),box:new T.BoxGeometry(1,1,1),ball:new T.SphereGeometry(1,7,5),cone:new T.ConeGeometry(1,1,7)};pools.set(T,pool);}
+ if(!pool.taper){pool.taper=new T.CylinderGeometry(.41,.54,1,8);pool.taper.rotateY(Math.PI/8);pool.limb=new T.CylinderGeometry(.5,.34,1,6);}
+
  const style=((seed%16)+16)%16,key=style+':'+seated;
  if(!pool.templates.has(key)){
   const profiles=[
@@ -17,11 +19,24 @@ export function createPedestrian(T,seed=0,{seated=false}={}){
   const b=batch(),hip=seated?.5:.8,lean=[1,7,8,14].includes(style)?.10:0,headY=hip+.75;
   const box=(color,x,y,z,w,h,d,rx=0,rz=0)=>b.part(pool.box,color,x,y,z,w,h,d,rx,rz);
   const ball=(color,x,y,z,w,h,d)=>b.part(pool.ball,color,x,y,z,w,h,d);
-  box(coat,0,hip+.29,lean,width,.61,depth,lean);
-  if([6,8,14].includes(style))box(coat,0,hip+.05,.01,width+.07,.48,depth+.04);
-  if(style===12||style===2)b.part(pool.cone,coat,0,hip-.03,0,width*.75,.46,depth*1.2);
-  for(const side of [-1,1]){box(coat,side*(width/2+.06),hip+.28,lean+.05,.12,.55,.15,seated?-.5:side*.09,side*.06);ball(skin,side*(width/2+.07),hip+.01,seated?.22:lean+.07,.066,.085,.065);}
-  ball(skin,0,headY,lean,.16,.21,.155);
+  b.part(pool.taper,coat,0,hip+.29,lean,width,.61,depth*.88,lean);
+  if([1,6,8,14].includes(style))b.part(pool.taper,coat,0,hip-.04,.01,width+.04,.58,depth*.92);
+  if(style===12||style===2)b.part(pool.taper,style===2?0x879794:coat,0,hip-.10,0,width*1.08,.56,depth*1.05);
+  for(const side of [-1,1]){
+   const x=side*(width*.39+.035),reach=seated?.19:side===1?.14:-.035;
+   b.part(pool.limb,coat,x,hip+.38,lean,.115,.31,.13,seated?-.5:-side*.19,side*.10);
+   b.part(pool.limb,coat,x,hip+.13,lean+reach,.10,.30,.115,seated?-.8:-.30,side*.04);
+   ball(skin,x,hip-.025,lean+reach+.045,.054,.071,.048);
+  }
+  ball(skin,0,headY,lean+.025,.145,.205,.13);
+  // Muted scarves and bags strengthen the outline without drawn outlines or extra meshes.
+  if([1,6,8,14].includes(style)){box(style===6?0x8b9999:0xa59b86,0,hip+.59,lean+depth*.45,.24,.09,.12);box(style===6?0x8b9999:0xa59b86,.065,hip+.43,lean+depth*.47,.09,.29,.055);}
+  if(!seated&&[0,2,6,8,10,12,14].includes(style)){
+   const x=width/2+.06,bag=style===2?0xbaa98d:style===12?0x937879:0x59696b;
+   b.part(pool.taper,bag,x,hip-.24,.15,.29,.34,.13,0,.06);
+   box(bag,x-.10,hip-.025,.15,.025,.16,.035);box(bag,x+.10,hip-.025,.15,.025,.16,.035);box(bag,x,hip+.045,.15,.21,.025,.035);
+  }
+
   if(hairKind!=='bald'){
    ball(hair,0,headY+.10,lean-.02,.171,.135,.163);
    if(['long','bob','hood'].includes(hairKind)){box(hair,0,headY-(hairKind==='long'?.12:.02),lean-.11,.34,hairKind==='long'?.55:.32,.14);for(const side of [-1,1])box(hair,side*.15,headY-.08,lean-.015,.07,hairKind==='long'?.48:.22,.2);}
@@ -36,7 +51,7 @@ export function createPedestrian(T,seed=0,{seated=false}={}){
   if(style===9)box(0x394c60,0,hip+.11,depth/2+.02,width*.65,.17,.03);
   if(style===10){box(0xc0b9a3,0,hip+.38,depth/2+.02,.17,.32,.025);for(let j=0;j<3;j++)ball(0x3c4039,.08,hip+.13+j*.11,depth/2+.04,.022,.022,.022);}
   const body=b.finish();g.add(body);
-  for(const side of [-1,1]){const l=batch(),x=side*(width>.6?.17:.105);if(seated){l.part(pool.box,pants,0,-.025,.22,.17,.17,.48);l.part(pool.box,pants,0,-.24,.43,.14,.47,.16);l.part(pool.box,0x24282b,0,-.45,.5,.18,.11,.28);}else{l.part(pool.box,pants,0,-.35,0,.16,.7,.18);l.part(pool.box,0x24282b,0,-.74,.08,.19,.12,.3);}const leg=l.finish();leg.position.set(x,hip,0);leg.name='leg';g.add(leg);}
+  for(const side of [-1,1]){const l=batch(),x=side*(width>.6?.17:.105);if(seated){l.part(pool.box,pants,0,-.025,.22,.17,.17,.48);l.part(pool.box,pants,0,-.24,.43,.14,.47,.16);l.part(pool.box,0x24282b,0,-.45,.5,.18,.11,.28);}else{l.part(pool.limb,pants,0,-.35,0,.15,.7,.155);l.part(pool.box,0x24282b,0,-.74,.07,.17,.10,.27);}const leg=l.finish();leg.position.set(x,hip,0);leg.name='leg';g.add(leg);}
   pool.templates.set(key,g);
  }
  const g=pool.templates.get(key).clone(true);return {g,body:g.children[0],legs:g.children.filter(o=>o.name==='leg')};

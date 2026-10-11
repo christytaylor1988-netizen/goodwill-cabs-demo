@@ -43,9 +43,9 @@ body.map-off #miniMapFrame{display:none}body.map-off #speed{right:22px}
 @media(max-width:700px){#job{width:220px}#passengerChat{bottom:280px;width:80vw;max-width:80vw}#controls{width:225px}#score{font-size:20px}#options{flex-wrap:wrap}#job #offerDetails{display:block}}
 @media(max-width:480px){#job{width:185px}#job #jobText{display:block;font-size:10px}#job #offerDetails{font-size:10px}#passengerChat{bottom:310px}#controls{width:195px}}
 </style>
-<link rel="stylesheet" href="./demo-town/driving-hud.css?v=compact-2">
+<link rel="stylesheet" href="./demo-town/driving-hud.css?v=realm-phone-1-compact-2">
 <link rel="stylesheet" href="./demo-town/cockpit.css?v=clock-sightline-final-20260928">
-<link rel="stylesheet" href="./demo-town/driver-phone.css?v=compact-2">
+<link rel="stylesheet" href="./demo-town/driver-phone.css?v=realm-phone-1">
 <style>#visitStade,#visitArcades,#visitPothole,#visitTown{display:none!important}.demo-portal-icon{font:bold 22px system-ui;text-align:center;text-shadow:0 1px 3px #000,-1px 0 #000}#hyperHUD{display:none}body.hyper-near #hyperHUD,body.hyper-active #hyperHUD{display:block}body.hud-menu #controls{max-height:70vh;overflow:auto}</style></head>
 
 <body>
@@ -98,7 +98,9 @@ import { createOldTime } from "./demo-town/old-time.js?v=countdown-cash-red-3";
 import { createStade, detailNetHut } from "./stade.js?v=beachfront-gulls-20260929b";
 import { createDrivingLights } from "./lighting.js?v=cycle1";
 let drivingLights=null;
-import { createWeather } from "./weather.js?v=moon-east4";
+import { finishRoof } from "./demo-town/building-rooflines.js?v=1";
+import { applyGroundPalette } from "./demo-town/ground-palette.js?v=tonal-sage-3";
+import { createWeather } from "./demo-town/coastal-weather.js?v=tonal-sage-3";
 import { createPotholes, fictionalPotholeSites } from "./potholes.js";
 let potholeStudy=null;
 import {createBreakbeatRoad} from './demo-town/breakbeat-road.js';
@@ -108,7 +110,7 @@ import {buildEversfieldCorner} from "./demo-town/eversfield-corner.js?v=4";
 import {buildEversfieldTerrace,configureEversfieldWells} from "./demo-town/eversfield-terraces.js?v=2";
 import { createSeafront } from "./seafront.js?v=funland-frontage-2";
 let seafrontStudy=null;
-import {buildContinuousSeafront} from "./demo-town/continuous-seafront.js?v=pier-forecourt-1";
+import {buildContinuousSeafront} from "./demo-town/continuous-seafront.js?v=surface-tones-1";
 let continuousSeafront=null;
 import {buildPelham} from "./demo-town/pelham.js";
 import {createFerrisWheel} from "./demo-town/ferris-wheel.js";
@@ -120,14 +122,14 @@ let hastingsStation=null;
 let stationClearedRoad=[];
 import {createEastHillLift} from "./demo-town/east-hill-lift.js";
 let eastHillLift=null;
-import {createHyperReality} from "./demo-town/hyperreality.js?v=secret-entry-1";
+import {createHyperReality} from "./demo-town/hyperreality.js?v=realm-phone-1-secret-entry-1";
 let hyperReality=null;
 let oldTime=null,era1066=null;
 function activeLandscape(){return oldTime?.active?oldTime:era1066?.active?era1066:null;}
 import {createRoadPickups} from "./demo-town/road-pickups.js?v=dashboard-1";
-import {createDrivingHUD} from "./demo-town/driving-hud.js?v=compact-2";
+import {createDrivingHUD} from "./demo-town/driving-hud.js?v=realm-wording-2";
 let drivingHUD=null;
-import {createPedestrian} from './demo-town/pedestrian-pool.js?v=local-2';
+import {createPedestrian} from './demo-town/pedestrian-pool.js?v=illustrated-1';
 import {createDogCompanion} from './demo-town/dog-companions.js?v=1';
 import {planRoute,nextInstruction,remainingRouteDistance,formatJourneyDistance} from "./demo-town/route-guidance.js?v=journey-2";
 import {resolveContact} from "./demo-town/contact-response.js?v=settled-contact-20260929";
@@ -796,9 +798,8 @@ const cabTrim=new THREE.MeshStandardMaterial({color:0x0e1115,roughness:.65,side:
 function cabPane(points,mat){const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(points.flat(),3));g.setIndex([0,1,2,0,2,3]);g.computeVertexNormals();const m=new THREE.Mesh(g,mat);taxiVisual.add(m);return m}
 function cabStrut(a,b,width,material=taxiWhite){const va=new THREE.Vector3(...a),vb=new THREE.Vector3(...b),m=new THREE.Mesh(new THREE.BoxGeometry(width,va.distanceTo(vb),width),material);m.position.copy(va).add(vb).multiplyScalar(.5);m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),vb.sub(va).normalize());taxiVisual.add(m)}
 taxiBox(1.44,.10,2.05,0,.80,.10,upholstery);
-for(const x of [-.39,.39]){taxiBox(.52,.35,.18,x,1.02,-.14,upholstery);taxiBox(.25,.18,.14,x,1.28,-.14,upholstery)}
+for(const x of [-.39,.39])taxiBox(.52,.35,.18,x,1.02,-.14,upholstery);
 taxiBox(1.26,.27,.16,0,1.04,.89,upholstery);taxiBox(1.26,.10,.34,0,.9,.70,upholstery);
-for(const x of [-.42,0,.42])taxiBox(.22,.16,.13,x,1.26,.89,upholstery);
 // Low, gently crowned roof, with a painted shoulder around each window.
 sectionBody([[-.58,.63,1.43,1.48],[-.32,.70,1.50,1.54],[.14,.71,1.52,1.57],[.55,.66,1.48,1.53]],taxiWhite);
 cabPane([[-.78,.97,-1.12],[.78,.97,-1.12],[.63,1.45,-.58],[-.63,1.45,-.58]],cabinGlass);
@@ -844,6 +845,8 @@ taxiBox(.69,.19,.29,0,1.65,.16,signMaterial);const tc=document.createElement('ca
 // Stream 450 m scenery cells. Fetch once, cache on disk, release distant meshes.
 const SCENERY_CELL=450,sceneryTiles=new Map(),sharedAreas=new Map();
 let sceneryBusy=false,sceneryClock=0,sceneryEnabled=false,coastStarted=false;
+const retainedDemoCells=new Set();
+let demoSceneryReady=false;
 const sharedResources=new Set();
 function shared(resource){sharedResources.add(resource);return resource}
 function randomFrom(seed){let n=(Number(seed)||1)>>>0;return ()=>{n=(Math.imul(1664525,n)+1013904223)>>>0;return n/4294967296}}
@@ -1035,19 +1038,8 @@ function makeBuilding(poly,tags,seed,tile){
   districtDetails(poly,tags,height,seed,tile);
   streetWear(poly,height,seed,tile);
  }
- // Pitched roofs only on compact, approximately rectangular footprints.
- if(points.length===4&&!poly.holes.length&&height<15&&tags['roof:shape']!=='flat'){
-  let [a,b,c,d]=points;const ab=b.clone().sub(a),bc=c.clone().sub(b);
-  if(ab.length()>3&&bc.length()>3&&ab.length()<35&&bc.length()<35&&Math.abs(ab.clone().normalize().dot(bc.clone().normalize()))<.15){
-   if(ab.length()<bc.length())[a,b,c,d]=[b,c,d,a];
-   const r1=a.clone().add(d).multiplyScalar(.5),r2=b.clone().add(c).multiplyScalar(.5),rise=Math.min(2.7,a.distanceTo(d)*.28);
-   const verts=[];const add=(p,y)=>verts.push(p.x,y,p.y),tri=(p,py,q,qy,r,ry)=>{add(p,py);add(q,qy);add(r,ry)};
-   tri(a,height,b,height,r2,height+rise);tri(a,height,r2,height+rise,r1,height+rise);
-   tri(d,height,r1,height+rise,r2,height+rise);tri(d,height,r2,height+rise,c,height);
-   tri(a,height,r1,height+rise,d,height);tri(b,height,c,height,r2,height+rise);
-   const rg=new THREE.BufferGeometry();rg.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));rg.computeVertexNormals();const rm=new THREE.Mesh(rg,roof);rm.castShadow=true;tile.group.add(rm);
-  }
- }
+ finishRoof(THREE,{poly,height,seed,tags,tile,roof,trim:trimMaterial,chimney:chimneyMaterial,box:buildingBox,inside:inPolygon});
+
  if(seed===1024918514)roughKettleSide(THREE,{poly,tile,objectBox,shared});
  conformBuilding(tile,firstChild,poly);
  if(!normanFrontages?.active.has(seed))businessFrontages?.queue(tile,poly,seed);
@@ -1161,13 +1153,13 @@ async function loadSceneryCell(spec){
  sceneryStatus('Preparing nearby streets…');
  const memberWays=new Set();
  for(const f of cell.buildings)if(f.type==='relation'&&featurePolygons(f).length)for(const m of f.members||[])memberWays.add(m.ref);
- let processed=0;
+ let sliceStart=performance.now();
  // Bad individual features are skipped; the rest of the street remains usable.
  const attempt=(feature,fn)=>{try{fn()}catch(error){sceneryErrors++;console.warn('Skipped map feature',feature.type,feature.id,error)}};
  for(const feature of cell.buildings){
   if(feature.type==='way'&&memberWays.has(feature.id))continue;
   attempt(feature,()=>{for(const poly of featurePolygons(feature))makeBuilding(poly,feature.tags||{},feature.id,tile)});
-  if(++processed%35===0){windowLife.finish(tile);await nextFrame();}
+  if(performance.now()-sliceStart>=4){windowLife.finish(tile);await nextFrame();sliceStart=performance.now();}
  }
  for(const feature of cell.land)attempt(feature,()=>retainArea(feature,tile));
  for(const feature of cell.paths)attempt(feature,()=>addPaths(feature,tile));
@@ -1179,7 +1171,7 @@ async function loadSceneryCell(spec){
 function updateScenery(dt){
  if(!sceneryEnabled)return;sceneryClock+=dt;if(sceneryClock<.2)return;sceneryClock=0;
  const tx=Math.floor(taxi.position.x/SCENERY_CELL),tz=Math.floor(taxi.position.z/SCENERY_CELL);
- for(const tile of [...sceneryTiles.values()])if(tile.state!=='loading'&&(Math.abs(tile.x-tx)>2||Math.abs(tile.z-tz)>2))dropTile(tile);
+ for(const tile of [...sceneryTiles.values()])if(!retainedDemoCells.has(tile.key)&&tile.state!=='loading'&&(Math.abs(tile.x-tx)>2||Math.abs(tile.z-tz)>2))dropTile(tile);
  if(sceneryBusy)return;
  const next=desiredScenery().find(t=>!sceneryTiles.has(t.key));if(!next)return;
  sceneryBusy=true;
@@ -1432,7 +1424,7 @@ async function loadRoadNetwork() {
   breakbeatRoad=createBreakbeatRoad(THREE,{scene,taxi,wheels:taxiWheels,roads:mapData.roads,convertPosition,terrainHeight});
   el('visitBreakbeat').disabled=false;
   spawnTaxiOnRoad();
-  startShift();
+  startShift();ready=false;
   roadPickups=createRoadPickups(THREE,{scene,taxi,segments:driveSegments,terrainHeight,blocked:bodyBlocked,toast,previous:()=>pickupPrevious,canCollect:()=>!activeLandscape()&&!hyperReality?.free(),canUse:()=>ready&&!activeLandscape()&&!paused&&!hyperReality?.free()&&!hyperReality?.stunned,tip:amount=>{if(['pickup','dropoff'].includes(jobState))acceptedQuote+=amount;else fareTipBank+=amount;}});
   if(new URLSearchParams(location.search).has('pickups')){const p=roadPickups.items.find(p=>p.kind==='petrol');if(p){taxi.position.set(p.x+Math.sin(p.yaw)*18,0,p.z+Math.cos(p.yaw)*18);taxi.position.y=terrainHeight(taxi.position.x,taxi.position.z)+.15;taxi.rotation.y=p.yaw;resetChassis();updateCamera(true);setWeather('sunny');}}
 
@@ -1503,9 +1495,7 @@ async function loadRoadNetwork() {
     1200
   );
 
-  loadBuildings(
-    count
-  );
+  await loadBuildings();
 
 }
 
@@ -1518,14 +1508,48 @@ async function loadRoadNetwork() {
 // =====================================================
 
 // Scenery begins beside the taxi and follows it throughout the shift.
-function loadBuildings(){sceneryEnabled=true;sceneryClock=1;void loadCoastline();updateScenery(0)}
+async function loadBuildings(){
+ // These detailed seafront districts are small enough to retain for the session.
+ // Build them before driving, including shared gardens/beach and facade batches.
+ ready=false;
+ await loadCoastline();
+ const cells=new Map();
+ for(const [lat,lon] of [[50.8517,.5637],[50.8547,.5785]]){
+  const p=convertPosition(lat,lon),tx=Math.floor(p.x/SCENERY_CELL),tz=Math.floor(p.z/SCENERY_CELL);
+  for(let dx=-2;dx<=2;dx++)for(let dz=-1;dz<=1;dz++){
+   const x=tx+dx,z=tz+dz,key=x+','+z;cells.set(key,{x,z,key});retainedDemoCells.add(key);
+  }
+ }
+ let n=0;
+ for(const spec of cells.values()){
+  status.textContent=`Preparing seafront scenery · ${++n}/${cells.size}`;
+  await nextFrame();await loadSceneryCell(spec);await nextFrame();
+ }
+ // Warm the same materials and geometry on the GPU before either district is seen.
+ const warmCamera=camera.clone(),warmTarget=new THREE.WebGLRenderTarget(128,128),previousTarget=renderer.getRenderTarget();
+ try{
+  for(const [lat,lon] of [[50.8517,.5637],[50.8547,.5785]]){
+   const p=convertPosition(lat,lon),y=terrainHeight(p.x,p.z)+5;
+   for(let i=0;i<4;i++){
+    warmCamera.position.set(p.x,y,p.z);warmCamera.lookAt(p.x+Math.sin(i*Math.PI/2)*100,y,p.z+Math.cos(i*Math.PI/2)*100);
+    renderer.setRenderTarget(warmTarget);renderer.render(scene,warmCamera);renderer.setRenderTarget(previousTarget);await nextFrame();
+   }
+  }
+ }finally{renderer.setRenderTarget(previousTarget);warmTarget.dispose();}
+ // Upload Hyperreality shaders/buffers during loading, before the first portal crossing.
+ const hyperTarget=new THREE.WebGLRenderTarget(128,128),savedTarget=renderer.getRenderTarget();
+ try{renderer.setRenderTarget(hyperTarget);hyperReality?.render(renderer,camera,true);renderer.setRenderTarget(savedTarget);await nextFrame();}
+ finally{renderer.setRenderTarget(savedTarget);hyperTarget.dispose();}
+ demoSceneryReady=true;ready=true;clearKeys();resetChassis();
+ sceneryEnabled=true;sceneryClock=1;sceneryStatus();updateScenery(0);
+}
 
 // DRIVING
 const keys={};
 let speed=0,steer=0,ready=false,paused=false,roadInfo=null,lastSafe=null,roadClock=0;
 const MAX_FORWARD_SPEED=22,MAX_REVERSE_SPEED=-6;
 function clearKeys(){for(const key in keys)delete keys[key]}
-function pauseGame(value){paused=value;if(value)breakbeatRoad?.audio.stop();clearKeys();document.getElementById('pauseShade').hidden=!value;}
+function pauseGame(value){paused=value;if(!value)document.body.classList.remove('hud-menu');if(value)breakbeatRoad?.audio.stop();clearKeys();document.getElementById('pauseShade').hidden=!value;}
 window.addEventListener('keydown',event=>{
  const key=event.key.toLowerCase();
  if(!event.repeat&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&!event.target.isContentEditable&&!['INPUT','TEXTAREA','SELECT'].includes(event.target.tagName)){
@@ -1535,7 +1559,7 @@ window.addEventListener('keydown',event=>{
  }
  if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(key)&&event.target.tagName!=='BUTTON')event.preventDefault();
  if(event.target.tagName==='BUTTON'&&(key===' '||key==='enter'))return;
- if(!event.repeat){if(key==='1'){event.preventDefault();drivingHUD?.cycle();}if(key==='p'||key==='escape')pauseGame(!paused);if(key==='r'&&!paused)recoverTaxi();if(key==='m')toggleMap();if(key==='c'){cockpit?.toggle();}if(key==='h')toggleHeadlights();if(key==='q'&&!activeLandscape()&&!paused)hyperReality?.activate();if(key==='t'&&!activeLandscape()&&!paused)roadPickups?.activate();if(key==='e'&&!activeLandscape()&&!paused)acceptOffer();if(key==='x'&&!activeLandscape()&&!paused)declineOffer();if(key==='n'&&!activeLandscape()&&!paused&&jobState==='complete')newFare();}
+ if(!event.repeat){if(key==='1'){event.preventDefault();drivingHUD?.toggleMenu();}if(key==='2'){event.preventDefault();drivingHUD?.cycle();}if(key==='p'||key==='escape')pauseGame(!paused);if(key==='r'&&!paused)recoverTaxi();if(key==='m')toggleMap();if(key==='c'){cockpit?.toggle();}if(key==='h')toggleHeadlights();if(key==='q'&&!activeLandscape()&&!paused)hyperReality?.activate();if(key==='t'&&!activeLandscape()&&!paused)roadPickups?.activate();if(key==='e'&&!activeLandscape()&&!paused)acceptOffer();if(key==='x'&&!activeLandscape()&&!paused)declineOffer();if(key==='n'&&!activeLandscape()&&!paused&&jobState==='complete')newFare();}
  if(!paused)keys[key]=true;
 });
 document.addEventListener('click',event=>{const button=event.target.closest?.('button');if(button)button.blur()});
@@ -2204,6 +2228,7 @@ Object.values(districtMats).flat().forEach(windowLife.facade);
 configureEversfieldWells(THREE,[ground.material,pavementMaterial,pathMaterial,greenMaterial,wellingtonBlockMaterial]);
 seafrontStudy=createSeafront(THREE,{shared,findNearestRoadPoint,roadWidthForType,inPolygon,terrainHeight});
 greenTrial=createGreenTrial(THREE,{shared,terrainHeight,inPolygon,findNearestRoadPoint,roadWidthForType,hitsBuilding,convertPosition,getPaths:()=>mapData.paths,getTerrain:()=>ground.geometry,polygonShape});
+applyGroundPalette([ground.material,greenMaterial,greenTrial.grass],woodlandMaterial,pathMaterial,beachMaterial);
 warriorGardens=createWarriorGardens(THREE,{shared,registerBarrier,convertPosition,terrainHeight,inPolygon,polygonShape,batchScenery});
 seafrontRepair=createSeafrontRepair(THREE,{shared,convertPosition,terrainHeight,featurePolygons,inPolygon,polygonShape,objectBox,cylinder,hipRoof,textSign,batchScenery,roadWidthForType});
 seasideShelters=createShelters(THREE,{shared,convertPosition,findNearestRoadPoint,roadWidthForType,terrainHeight,clearPavement,batchScenery});
@@ -2380,7 +2405,7 @@ let jobState='waiting',pickup=null,dropoff=null,target=null,stopTime=0,jobElapse
 let visitedPlaces=new Set(),lastDropoff=null,fareNumber=0;
 const el=id=>document.getElementById(id);
 try{const p=JSON.parse((localStorage.getItem('marina-cars-playable-demo-v1')||localStorage.getItem('goodwill-cabs-seafront-development-v1'))||'null');if(p){completed=Number(p.completed)||0;score=Number(p.score)||0;visitedPlaces=new Set(p.visited||[])}}catch{}
-drivingHUD=createDrivingHUD({state:()=>({job:jobState,quote:acceptedQuote,phase:weatherStudy.phase})});
+drivingHUD=createDrivingHUD({pause:pauseGame,state:()=>({job:jobState,quote:acceptedQuote,online:acceptingJobs,coins:hyperReality?.coinsCollected||0})});
 function updateStats(){el('fareCount').textContent=completed;el('score').textContent='£'+(score/100).toFixed(2);el('visited').textContent=places.filter(p=>visitedPlaces.has(p.name)).length+'/'+places.length}
 function saveProgress(){try{localStorage.setItem('marina-cars-playable-demo-v1',JSON.stringify({completed,score,visited:[...visitedPlaces]}))}catch{}}
 function toast(message){el('toast').textContent=message;el('toast').style.opacity=1;clearTimeout(toastTimer);toastTimer=setTimeout(()=>el('toast').style.opacity=0,4200)}
@@ -2410,16 +2435,19 @@ function updateRouteGuidance(dt,distance){
 function clearTarget(){phoneRouteLine?.setLatLngs([]);target=null;fareRoute=[];routeTarget=null;targetRing.visible=false;targetBeacon.visible=false;passenger.visible=false;if(miniMap.hasLayer(goalMapMarker))miniMap.removeLayer(goalMapMarker);el('stopFill').style.width='0%';el('distance').textContent='—';el('arrow').style.transform='none';el('arrow').style.opacity='.15';el('guidance').classList.remove('behind')}
 function placeTarget(place,isPickup){el('arrow').style.opacity='1';target=place;routeClock=0;stopTime=0;const h=terrainHeight(place.stop.x,place.stop.z),g=new THREE.RingGeometry(9,9.5,48);g.rotateX(-Math.PI/2);const p=g.attributes.position;for(let i=0;i<p.count;i++)p.setY(i,terrainHeight(place.stop.x+p.getX(i),place.stop.z+p.getZ(i))-h+.27);g.computeVertexNormals();targetRing.geometry.dispose();targetRing.geometry=g;targetRing.position.set(place.stop.x,h,place.stop.z);targetRing.visible=true;targetBeacon.position.set(place.stop.x,h+3,place.stop.z);targetBeacon.visible=true;targetRing.material.color.setHex(isPickup?0xffdc52:0x63f1c3);targetBeacon.material.color.copy(targetRing.material.color);passenger.visible=isPickup;if(isPickup)styleWaitingPassenger(place);const seg=place.road,dx=seg.b.x-seg.a.x,dz=seg.b.z-seg.a.z,len=Math.hypot(dx,dz)||1,px=place.stop.x+dz/len*(roadWidthForType(seg.type)/2+1),pz=place.stop.z-dx/len*(roadWidthForType(seg.type)/2+1);passenger.position.set(px,terrainHeight(px,pz)+.16,pz);const ll=worldToLatLon(place.stop.x,place.stop.z);goalMapMarker.setLatLng([ll.lat,ll.lon]).setStyle({fillColor:isPickup?'#ffdc52':'#63f1c3'}).addTo(miniMap);el('targetLabel').textContent=isPickup?'PICKUP':'DROP-OFF';el('targetName').textContent=place.name;el('nextFare').hidden=true;}
 function startShift(){initialisePlaces();const station=places.find(p=>p.name==='Hastings Station')||places[0];const choices=driveSegments.filter(s=>['primary','secondary','tertiary','residential','unclassified'].includes(s.type)&&s.length>15).sort((a,b)=>Math.hypot((a.a.x+a.b.x)/2-station.stop.x,(a.a.z+a.b.z)/2-station.stop.z)-Math.hypot((b.a.x+b.b.x)/2-station.stop.x,(b.a.z+b.b.z)/2-station.stop.z));const seg=choices[0]||station.road;taxi.position.copy(seg.a).lerp(seg.b,.5);taxi.position.y=terrainHeight(taxi.position.x,taxi.position.z)+.16;const dx=seg.b.x-seg.a.x,dz=seg.b.z-seg.a.z;taxi.rotation.y=Math.atan2(-dx,-dz)+(seg.oneway==='-1'?Math.PI:0);lastSafe={point:taxi.position.clone(),segment:seg,yaw:taxi.rotation.y};ready=true;el('resetRoad').disabled=false;updateStats();newFare();dispatchWait=1.5;updateCamera(true);updateMiniMap(true);toast('Control here. You’re on shift — offers arrive by radio.');}
-function newFare(){if(!ready)return;if(!acceptingJobs){offer=null;jobState='off-duty';clearTarget();el('offerActions').hidden=true;el('offerDetails').hidden=true;el('nextFare').hidden=true;el('passengerChat').hidden=true;el('targetName').textContent='Off shift';el('turnCue').textContent='OFF DUTY';return;}offer=null;jobState='waiting';clearTarget();el('offerActions').hidden=true;el('nextFare').hidden=true;el('offerDetails').hidden=true;el('phase').textContent='RADIO / AVAILABLE';el('jobTitle').textContent='Waiting for a job';el('jobText').textContent='Cruise the town. Control will offer another fare shortly.';el('jobHint').textContent='You choose which jobs to take. Longer trips pay more.';el('targetLabel').textContent='ON SHIFT';el('targetName').textContent='Waiting for job';el('turnCue').textContent='AVAILABLE';dispatchWait=5+Math.random()*5;chatHide=0;el('passengerChat').hidden=true;}
+function newFare(){if(!ready)return;if(!acceptingJobs){offer=null;jobState='off-duty';clearTarget();el('offerActions').hidden=true;el('offerDetails').hidden=true;el('nextFare').hidden=true;el('passengerChat').hidden=true;el('targetName').textContent='OFFLINE';el('turnCue').textContent='OFF DUTY';return;}offer=null;jobState='waiting';clearTarget();el('offerActions').hidden=true;el('nextFare').hidden=true;el('offerDetails').hidden=true;el('phase').textContent='RADIO / AVAILABLE';el('jobTitle').textContent='Waiting for a job';el('jobText').textContent='Cruise the town. Control will offer another fare shortly.';el('jobHint').textContent='You choose which jobs to take. Longer trips pay more.';el('targetLabel').textContent='ONLINE';el('targetName').textContent='Waiting for jobs';el('turnCue').textContent='AVAILABLE';dispatchWait=5+Math.random()*5;chatHide=0;el('passengerChat').hidden=true;}
 // Session opening: only accepted jobs advance this fixed tour; declines/timeouts repeat it.
-const demoTourStops=['Rock-a-Nore','Electro Studios','Hastings Station','Funland','Warrior Square','London Road','White Rock / Pier','Old Town / George Street'];
-let dispatchNoteTimer;
+const demoTourJobs=[
+ {pickup:'Rock-a-Nore',dropoff:'Electro Studios'},
+ {pickup:'Hastings Station',dropoff:'Funland'},
+ {pickup:'Warrior Square',dropoff:'London Road'},
+ {pickup:'Funland',dropoff:'Warrior Square'},
+ {pickup:'Electro Studios',dropoff:'White Rock / Pier'},
+ {pickup:'London Road',dropoff:'Hastings Station'},
+ {pickup:'White Rock / Pier',dropoff:'Old Town / George Street'}
+];
 function toggleReceivingJobs(){
  acceptingJobs=!acceptingJobs;
- let note=el('driverPhone').querySelector('.driver-dispatch-note');
- if(!note){note=document.createElement('div');note.className='driver-dispatch-note';note.setAttribute('role','status');note.innerHTML='<strong>GOODWILL CABS</strong><span></span>';el('driverPhone').append(note);}
- note.querySelector('span').textContent=acceptingJobs?"You're now back on shift.":'Thanks for working for Goodwill.';
- clearTimeout(dispatchNoteTimer);dispatchNoteTimer=setTimeout(()=>note.remove(),4000);
  if(!['pickup','dropoff'].includes(jobState))newFare();
  drivingHUD?.update();
 }
@@ -2427,9 +2455,10 @@ function createOffer(){
  if(!acceptingJobs)return;
  const current=nearestDrivePoint(taxi.position);if(!current)return;
  let pick,dest=null,length=0,approachDistance;
- if(fareNumber<demoTourStops.length-1){
-  pick=places.find(p=>p.name===demoTourStops[fareNumber]);
-  dest=places.find(p=>p.name===demoTourStops[fareNumber+1]);
+ if(fareNumber<demoTourJobs.length){
+  const job=demoTourJobs[fareNumber];
+  pick=places.find(p=>p.name===job.pickup);
+  dest=places.find(p=>p.name===job.dropoff);
   if(!pick||!dest){dispatchWait=3;return;}
   length=routeDistance(pick.node,dest.node);approachDistance=routeDistance(current.node,pick.node);
   if(!Number.isFinite(length)||!Number.isFinite(approachDistance)){dispatchWait=3;return;}
@@ -2440,7 +2469,7 @@ function createOffer(){
 function acceptOffer(){if(jobState!=='offer'||!offer)return false;pickup=offer.pickup;dropoff=offer.dropoff;acceptedQuote=offer.quote+fareTipBank;fareTipBank=0;offer=null;jobState='pickup';jobElapsed=0;fareNumber++;el('offerActions').hidden=true;el('offerDetails').hidden=true;placeTarget(pickup,true);el('phase').textContent='01 / GO TO PICKUP';el('jobTitle').textContent=pickup.name;el('jobText').textContent='Job accepted. Stop in the yellow ring for two seconds to collect your passenger.';el('jobHint').textContent='Follow the next-junction arrow. Guidance updates if you miss a turn.';toast('Control: booked to you, Car 07.');return true;}
 function declineOffer(){if(jobState!=='offer')return false;declinedCount++;newFare();toast('Control: no problem. Stand by for another job.');return true}
 function updateDispatch(dt){if(!ready||paused)return;if(acceptingJobs&&jobState==='waiting'){dispatchWait-=dt;if(dispatchWait<=0){dispatchWait=3;createOffer()}}else if(jobState==='offer'){offerRemaining-=dt;el('offerCountdown').textContent=Math.ceil(Math.max(0,offerRemaining))+'s';if(offerRemaining<=0)newFare()}if(chatHide>0){chatHide-=dt;if(chatHide<=0)el('passengerChat').hidden=true}if(jobState==='dropoff'){chatClock-=dt;if(chatClock<=0){sayPassenger();chatClock=nextChatDelay()}}}
-function updateJob(dt){if(!ready||paused||!target||!['pickup','dropoff'].includes(jobState)||hyperReality?.returning)return;jobElapsed+=dt;const dx=target.stop.x-taxi.position.x,dz=target.stop.z-taxi.position.z,distance=Math.hypot(dx,dz);updateRouteGuidance(dt,distance);const stopped=distance<10&&Math.abs(speed)<.45;stopTime=stopped?Math.min(2,stopTime+dt):0;el('stopFill').style.width=(stopTime/2*100)+'%';el('jobHint').textContent=distance<10?(stopped?'Passenger '+(jobState==='pickup'?'getting in…':'getting out…'):'Brake and stop in the ring.'):'Next junction · route updates automatically.';if(stopTime<2)return;if(jobState==='pickup'){jobState='dropoff';beginPassenger();placeTarget(dropoff,false);el('phase').textContent='02 / PASSENGER ON BOARD';el('jobTitle').textContent=dropoff.name;el('jobText').textContent='“'+dropoff.name+', please.” Stop in the green ring to complete the fare.';chatClock=12+Math.random()*10;toast('Passenger aboard. Estimated fare £'+(acceptedQuote/100).toFixed(2));}else{jobState='complete';completed++;score+=acceptedQuote;visitedPlaces.add(dropoff.name);lastDropoff=dropoff;updateStats();saveProgress();clearTarget();el('phase').textContent='03 / FARE PAID';el('jobTitle').textContent='Cheers, driver.';el('jobText').textContent='Delivered to '+dropoff.name+'. You earned £'+(acceptedQuote/100).toFixed(2)+'.';el('jobHint').textContent=acceptingJobs?'Ready for another offer? Radio control below or press N.':'Shift finished. Enjoy the drive.';el('nextFare').hidden=false;el('nextFare').textContent=acceptingJobs?'Available for jobs · N':'Off shift · N';el('targetName').textContent='Fare complete';el('turnCue').textContent='PAID';el('distance').textContent='£'+(acceptedQuote/100).toFixed(2);el('passengerChat').hidden=true;chatHide=0;toast('Fare paid. Nice one, Car 07.');}}
+function updateJob(dt){if(!ready||paused||!target||!['pickup','dropoff'].includes(jobState)||hyperReality?.returning)return;jobElapsed+=dt;const dx=target.stop.x-taxi.position.x,dz=target.stop.z-taxi.position.z,distance=Math.hypot(dx,dz);updateRouteGuidance(dt,distance);const stopped=distance<10&&Math.abs(speed)<.45;stopTime=stopped?Math.min(2,stopTime+dt):0;el('stopFill').style.width=(stopTime/2*100)+'%';el('jobHint').textContent=distance<10?(stopped?'Passenger '+(jobState==='pickup'?'getting in…':'getting out…'):'Brake and stop in the ring.'):'Next junction · route updates automatically.';if(stopTime<2)return;if(jobState==='pickup'){jobState='dropoff';beginPassenger();placeTarget(dropoff,false);el('phase').textContent='02 / PASSENGER ON BOARD';el('jobTitle').textContent=dropoff.name;el('jobText').textContent='“'+dropoff.name+', please.” Stop in the green ring to complete the fare.';chatClock=12+Math.random()*10;toast('Passenger aboard. Estimated fare £'+(acceptedQuote/100).toFixed(2));}else{jobState='complete';completed++;score+=acceptedQuote;visitedPlaces.add(dropoff.name);lastDropoff=dropoff;updateStats();saveProgress();clearTarget();el('phase').textContent='03 / FARE PAID';el('jobTitle').textContent='Cheers, driver.';el('jobText').textContent='Delivered to '+dropoff.name+'. You earned £'+(acceptedQuote/100).toFixed(2)+'.';el('jobHint').textContent=acceptingJobs?'Ready for another offer? Radio control below or press N.':'Offline. Press J to go online.';el('nextFare').hidden=false;el('nextFare').textContent=acceptingJobs?'Available for jobs · N':'Offline · N';el('targetName').textContent='Fare complete';el('turnCue').textContent='PAID';el('distance').textContent='£'+(acceptedQuote/100).toFixed(2);el('passengerChat').hidden=true;chatHide=0;toast('Fare paid. Nice one, Car 07.');}}
 const passengerLines=[
  ['weather','Lovely weather. If you happen to be a drain.'],['weather','My umbrella turned inside out. Looked like it was trying to leave Hastings.'],['weather','They said light showers. Someone’s taking the piss with the word light.'],['weather','I put the washing out. That’s what caused this. Sorry, everyone.'],['weather','The sea looks wet today. More committed to it than usual.'],
  ['any','My brother’s got a smart fridge. Still can’t tell him he’s out of milk.'],['any','My daughter says I need boundaries. I said I’ve got a fence.'],['any','You been busy? Sorry. I think we’re legally required to ask you that.'],['any','My mum’s joined the family group chat. We now have seventeen weather forecasts a day.'],['any','I only went in for bread. Forty quid and a houseplant later…'],['any','The cat’s on a special diet. Mainly whatever I’m trying to eat.'],['any','I’ve stopped watching the news. The kettle gives me enough breaking developments.'],['any','Everyone on the news has a plan. Mine is to get home and take my shoes off.'],['any','My neighbour put a camera on his door. Now we’ve got footage of him losing his keys.'],['any','I’m not being funny, but… actually, no. I’m not.'],['any','Seagull nicked my chips. Maintained eye contact throughout. Professional.'],['any','I love Hastings. Even the wind’s got an opinion.'],['any','I’ve got nothing against hills. I just prefer them happening to other people.'],['any','My dad calls every console a Nintendo. Including the thermostat.'],['any','Apparently you should do one thing a day that scares you. I’ve checked my inbox.'],['any','The family holiday committee has reached a decision. We’re all staying annoyed.'],['any','Can you smell chips, or is that just my personality?'],['any','I bought a plant to relax. Now I’m responsible for something else with opinions.'],['any','Work said we’re like a family. That explains the arguments about the microwave.'],['any','Our group chat’s called Quick Question. No one’s escaped since 2019.'],['any','I like a quiet journey. Anyway, let me tell you about my boiler.'],['any','The dog’s got a raincoat. Looks like he’s come to inspect a building site.'],['any','My nephew’s a content creator. In my day we just called it making a mess.'],['any','If anyone asks, I was sensible today. You weren’t here for the cake bit.'],
@@ -2682,7 +2711,7 @@ function sayPassenger(){
 
 updateStats();
 
-let raining=true,weatherClock=100,weatherMode='rain',boost=100,boosting=false,boostLocked=false,trafficEnabled=true,trafficClock=0;
+let raining=false,weatherClock=100,weatherMode='sunny',boost=100,boosting=false,boostLocked=false,trafficEnabled=true,trafficClock=0;
 const trafficCars=[],trafficGroup=new THREE.Group();scene.add(trafficGroup);
 const trafficBodyGeometry=new THREE.BoxGeometry(1.65,.65,3.7),trafficCabGeometry=new THREE.BoxGeometry(1.42,.62,1.75),trafficWheelGeometry=new THREE.CylinderGeometry(.34,.34,.2,8);
 const trafficColors=[0x6f3437,0x9aa8af,0x354b62,0x75927b,0xd0c9b4,0x34383b].map(color=>new THREE.MeshStandardMaterial({color,roughness:.55}));
@@ -2710,14 +2739,14 @@ const weatherStudy=createWeather(THREE,{scene,taxi,roadMaterial,pavementMaterial
 drivingLights=createDrivingLights(THREE,{scene,taxi,taxiVisual,headlampMaterial,terrainHeight,getStreetTiles:()=>streetTiles,getTime:()=>weatherStudy.timeOfDay,getDarkness:()=>weatherStudy.darkness});
 function toggleHeadlights(){if(!drivingLights)return;drivingLights.toggle();el('headlightToggle').textContent=drivingLights.label()}
 el('headlightToggle').onclick=toggleHeadlights;
-const weatherChoices=['sunny','overcast','rain','fog'],timeChoices=['morning','afternoon','evening','night'];
-const weatherLabel=value=>value==='afternoon'?'Noon':value[0].toUpperCase()+value.slice(1);
+const weatherChoices=['sunny','overcast','rain','heavy','fog'],timeChoices=['morning','afternoon','evening','night'];
+const weatherLabel=value=>value==='rain'?'Light rain':value==='heavy'?'Heavier rain':value==='fog'?'Sea mist':value==='afternoon'?'Noon':value[0].toUpperCase()+value.slice(1);
 function setWeather(value){
  let mode=typeof value==='boolean'?(value?'rain':'sunny'):value;
  if(mode==='dry'||mode==='clear')mode='sunny';if(mode==='foggy')mode='fog';
  weatherMode=weatherChoices.includes(mode)?mode:'rain';raining=weatherMode==='rain';
  weatherStudy.setMode(weatherMode);el('weatherToggle').textContent='Weather: '+weatherLabel(weatherMode);
- el('weatherToggle').title='Sunny / Overcast / Rain / Fog. Independent of time; stays fixed for filming.';
+ el('weatherToggle').title='Gradual coastal weather: mostly sunny, occasional cloud and rain, rare morning sea mist.';
 }
 function setTimeOfDay(value){
  weatherStudy.setTime(value);
@@ -2725,7 +2754,7 @@ function setTimeOfDay(value){
 }
 el('weatherToggle').onclick=()=>setWeather(weatherChoices[(weatherChoices.indexOf(weatherMode)+1)%weatherChoices.length]);
 el('timeToggle').onclick=()=>setTimeOfDay(timeChoices[(timeChoices.indexOf(weatherStudy.timeOfDay)+1)%timeChoices.length]);
-function updateWeather(dt){weatherStudy.update(dt);const glow=weatherStudy.darkness;windowLife.setTime(glow);coastalSurfaces.setMoonlight(weatherStudy.moonlight);
+function updateWeather(dt){weatherStudy.update(dt,!document.body.classList.contains('hyper-active')&&!activeLandscape());weatherMode=weatherStudy.mode;raining=weatherStudy.rainAmount>.03;el('weatherToggle').textContent='Weather: '+weatherLabel(weatherMode);const glow=weatherStudy.darkness;windowLife.setTime(glow);coastalSurfaces.setMoonlight(weatherStudy.moonlight);
  setLeisureKioskTime(glow);setFlamingoTime(glow);electroStudios?.setTime(glow);normanFrontages?.setTime(glow);ferrisWheel?.setTime(glow);continuousSeafront?.londonClock?.setTime(glow);continuousSeafront?.bottleAlley?.setTime(glow);
  el('timeToggle').textContent='Time: '+weatherLabel(weatherStudy.timeOfDay);drivingLights.update(dt);el('headlightToggle').textContent=drivingLights.label();coastalSurfaces.update(dt)}
 

@@ -1,6 +1,6 @@
 import { createHyperGateway, crossesGateway } from "./hyper-gateway.js?v=frontage-2";
-import { createVerticalStrikes } from "./hyper-strikes.js?v=vertical-strike-6";
-import { createHyperCoins } from "./hyper-coins.js?v=1";
+import { createVerticalStrikes } from "./hyper-strikes.js?v=preload-7";
+import { createHyperCoins } from "./hyper-coins.js?v=preload-2";
 // Repeatable Funland entrance; each visit resets its lightweight arcade collectibles.
 export function createHyperReality(THREE,api){
  const {scene,taxi,ground,roads,roadWidthForType,targetRing,targetBeacon,terrainHeight,getSpeed,findExit,canRestore,onRestore}=api;
@@ -39,17 +39,19 @@ export function createHyperReality(THREE,api){
  function place(p,yaw=0){pickup.position.set(p.x,terrainHeight(p.x,p.z)+.05,p.z);pickup.rotation.y=yaw;previous.copy(taxi.position);message('FUNLAND · drive into the arcade.');}
  function activate(){if(phase!=='armed')return false;phase='active';inventory=0;button.disabled=true;api.onActivate?.();document.body.classList.add('hyper-active');skyTime=0;updateSky(0);chooseExits();startChase();previous.copy(taxi.position);message('ESCAPE THROUGH A PORTAL');return true}
  button.onclick=()=>{if(!api.isPaused())activate();button.blur()};
+  const adjacency=new Map();for(const s of roads)for(const [a,b] of [[s.na,s.nb],[s.nb,s.na]]){if(!a||!b)continue;if(!adjacency.has(a))adjacency.set(a,[]);adjacency.get(a).push(b);}
  function chooseExits(){
   // Only choose roads in the starting road's connected component.
-  const adjacency=new Map();for(const s of roads)for(const [a,b] of [[s.na,s.nb],[s.nb,s.na]]){if(!a||!b)continue;if(!adjacency.has(a))adjacency.set(a,[]);adjacency.get(a).push(b);}
+
   const start=roads.reduce((best,s)=>Math.hypot((s.a.x+s.b.x)/2-taxi.position.x,(s.a.z+s.b.z)/2-taxi.position.z)<Math.hypot((best.a.x+best.b.x)/2-taxi.position.x,(best.a.z+best.b.z)/2-taxi.position.z)?s:best,roads[0]);
   const reachable=new Set([start.na]),queue=[start.na];for(let i=0;i<queue.length;i++)for(const n of adjacency.get(queue[i])||[])if(!reachable.has(n)){reachable.add(n);queue.push(n);}
-  const candidates=roads.filter(s=>reachable.has(s.na)&&s.length>18).map(segment=>({segment,point:new THREE.Vector3((segment.a.x+segment.b.x)/2,0,(segment.a.z+segment.b.z)/2)})).filter(e=>{const d=Math.hypot(e.point.x-taxi.position.x,e.point.z-taxi.position.z);return d>500&&d<1450&&api.exitStillClear(e)});
+  const candidates=roads.filter(s=>reachable.has(s.na)&&s.length>18).map(segment=>({segment,point:new THREE.Vector3((segment.a.x+segment.b.x)/2,0,(segment.a.z+segment.b.z)/2)})).filter(e=>{const d=Math.hypot(e.point.x-taxi.position.x,e.point.z-taxi.position.z);return d>500&&d<1450});
   exits.length=0;for(let i=0;i<3;i++){
    const angle=taxi.rotation.y+i*Math.PI*2/3,tx=taxi.position.x-Math.sin(angle)*850,tz=taxi.position.z-Math.cos(angle)*850;
    const options=candidates.filter(e=>exits.every(p=>p.point.distanceTo(e.point)>550));options.sort((a,b)=>Math.hypot(a.point.x-tx,a.point.z-tz)-Math.hypot(b.point.x-tx,b.point.z-tz));
-   if(!options.length)throw new Error('No separated safe Hyper Reality exit found');
-   const e=options[0];exits.push(e);portalVisuals[i].group.position.set(e.point.x,terrainHeight(e.point.x,e.point.z)+.05,e.point.z);portalVisuals[i].group.rotation.y=Math.atan2(e.segment.b.x-e.segment.a.x,e.segment.b.z-e.segment.a.z);
+   const e=options.find(candidate=>api.exitStillClear(candidate));
+   if(!e)throw new Error('No separated safe Hyper Reality exit found');
+   exits.push(e);portalVisuals[i].group.position.set(e.point.x,terrainHeight(e.point.x,e.point.z)+.05,e.point.z);portalVisuals[i].group.rotation.y=Math.atan2(e.segment.b.x-e.segment.a.x,e.segment.b.z-e.segment.a.z);
   }exit=exits[0];
  }
  function restore(){barrage.clear();phase='pickup';entryLock=1.5;pickup.visible=true;returning=false;stun=immunity=0;document.body.classList.remove('hyper-active');hud.hidden=false;hud.style.opacity='1';exit=null;onRestore();previous.copy(taxi.position);message('FUNLAND · drive into the arcade.');}
@@ -67,7 +69,7 @@ export function createHyperReality(THREE,api){
   previous.copy(taxi.position);
  }
 
- function render(renderer,camera){if(!free())return false;const visible=new Map(),background=scene.background,fog=scene.fog;
+ function render(renderer,camera,warm=false){if(!free()&&!warm)return false;if(warm)barrage.prepare();const visible=new Map(),background=scene.background,fog=scene.fog;
   duskSky.position.copy(camera.position);gridMaterial.uniforms.eye.value.set(taxi.position.x,taxi.position.z);orb.position.set(camera.position.x-Math.sin(orbYaw)*1100,camera.position.y-20,camera.position.z-Math.cos(orbYaw)*1100);orb.lookAt(camera.position.x,orb.position.y,camera.position.z);
   const keep=new Set([duskSky,taxi,abstractGround,abstractRoads,light,sun,orb,portalRoot,barrage.group,coins.mesh]);
   for(const o of scene.children){visible.set(o,o.visible);o.visible=keep.has(o)&&(o===targetRing||o===targetBeacon?o.visible:true)}scene.background=backgroundColour;scene.fog=null;

@@ -12,7 +12,8 @@ export function createVerticalStrikes(T,{taxi,terrainHeight,getVelocity,onHit}){
  const screen=document.createElement('div');screen.id='hyperStrikeImpact';screen.style.cssText='position:fixed;inset:0;pointer-events:none;z-index:1080;background:repeating-linear-gradient(0deg,#fff3 0 1px,transparent 1px 5px);opacity:0';document.body.append(screen);let screenLife=0;
  function sound(impact=false){if(audio?.state!=='running')return;const n=Math.floor(audio.sampleRate*(impact?.22:.11)),buffer=audio.createBuffer(1,n,audio.sampleRate),data=buffer.getChannelData(0);for(let i=0;i<n;i++)data[i]=(Math.random()*2-1)*Math.pow(1-i/n,2);const source=audio.createBufferSource(),filter=audio.createBiquadFilter(),gain=audio.createGain();source.buffer=buffer;filter.type=impact?'lowpass':'bandpass';filter.frequency.value=impact?380:1700;gain.gain.value=impact?.25:.08;source.connect(filter).connect(gain).connect(audio.destination);source.start();source.onended=()=>{source.disconnect();filter.disconnect();gain.disconnect();};}
  function clear(){for(const s of slots)s.active=s.g.visible=false;flashes.forEach(f=>f.z=0);burst=0;screenLife=0;screen.style.opacity='0';}
- function reset(e){exits=e;time=waves=shots=hits=protection=0;next=2;scenic=.2;clear();try{if(!audio){const C=window.AudioContext||window.webkitAudioContext;if(C)audio=new C();}audio?.resume().catch(()=>{});}catch{}}
+ function prepare(){try{if(!audio){const C=window.AudioContext||window.webkitAudioContext;if(C)audio=new C();}}catch{}}
+ function reset(e){exits=e;time=waves=shots=hits=protection=0;next=2;scenic=.2;clear();prepare();try{audio?.resume().catch(()=>{});}catch{}}
  function launch(x,z){if(exits.some(e=>Math.hypot(x-e.point.x,z-e.point.z)<11))return;const s=slots.find(s=>!s.active);if(!s)return;Object.assign(s,{active:true,age:0,hit:false,x,z,warning:.98});s.g.position.set(x,terrainHeight(x,z)+.04,z);s.g.visible=true;s.flash.visible=false;s.fragments.visible=false;s.sparks.material.opacity=0;shots++;}
  function wave(){const v=getVelocity(),yaw=taxi.rotation.y,rx=Math.cos(yaw),rz=-Math.sin(yaw),fx=-Math.sin(yaw),fz=-Math.cos(yaw),x=taxi.position.x+v.x*.98,z=taxi.position.z+v.z*.98;
   if(waves%4===0&&burst===1){for(const side of [-1,1])for(const ahead of [-4,6])launch(x+rx*side*7+fx*ahead,z+rz*side*7+fz*ahead);}
@@ -29,7 +30,7 @@ export function createVerticalStrikes(T,{taxi,terrainHeight,getVelocity,onHit}){
    if(impact>.48){s.active=s.g.visible=false;flashes[i].z=0;}
   });
  }
- return {group,flashes,reset,clear,respite(){clear();next=2;protection=1.65;},update,get stats(){return{shots,hits,near,next,burst,protection,audioState:audio?.state,active:slots.filter(s=>s.active).map(s=>({x:s.x,z:s.z,age:s.age,warning:s.warning,impact:s.hit})),capacity:slots.length}}};
+ return {group,flashes,prepare,reset,clear,respite(){clear();next=2;protection=1.65;},update,get stats(){return{shots,hits,near,next,burst,protection,audioState:audio?.state,active:slots.filter(s=>s.active).map(s=>({x:s.x,z:s.z,age:s.age,warning:s.warning,impact:s.hit})),capacity:slots.length}}};
 }
 let texture;
 function flashTexture(T){if(texture)return texture;const c=document.createElement('canvas');c.width=c.height=64;const ctx=c.getContext('2d'),g=ctx.createRadialGradient(32,32,0,32,32,32);g.addColorStop(0,'white');g.addColorStop(.15,'rgba(255,250,225,.8)');g.addColorStop(1,'rgba(255,250,225,0)');ctx.fillStyle=g;ctx.fillRect(0,0,64,64);return texture=new T.CanvasTexture(c);}
